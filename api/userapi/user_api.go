@@ -2,8 +2,8 @@ package userapi
 
 import (
 	"FirstProject/config"
-	"FirstProject/model"
 	"FirstProject/entities"
+	"FirstProject/model"
 
 	"fmt"
 	"net/http"
@@ -15,13 +15,14 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type UserAPI struct {
+}
 
-
-func FindAll(response http.ResponseWriter, request *http.Request){
+func (userApi *UserAPI) FindAll(response http.ResponseWriter, request *http.Request) {
 	db, err := config.Connect()
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
-		return 
+		return
 
 	} else {
 		userModel := model.UserModel{
@@ -32,18 +33,18 @@ func FindAll(response http.ResponseWriter, request *http.Request){
 
 		if err2 != nil {
 			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return 
+			return
 		} else {
 			respondWithJson(response, http.StatusOK, users)
 		}
 	}
 }
 
-func Find(response http.ResponseWriter, request *http.Request){
+func (userApi *UserAPI) Find(response http.ResponseWriter, request *http.Request) {
 	db, err := config.Connect()
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
-		return 
+		return
 
 	} else {
 		userModel := model.UserModel{
@@ -57,52 +58,52 @@ func Find(response http.ResponseWriter, request *http.Request){
 
 		if err2 != nil {
 			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return 
+			return
 		} else {
 			respondWithJson(response, http.StatusOK, user)
 		}
 	}
 }
 
-func Create(response http.ResponseWriter, request *http.Request){
+func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Request) {
 
 	db, err := config.Connect()
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
-		return 
+		return
 
 	} else {
 		userModel := model.UserModel{
 			Db: db,
 		}
-		
+
 		var user entities.User
-		user.Id = bson.NewObjectId() // generates new id in Bson notation
+		user.Id = bson.NewObjectId()                // generates new id in Bson notation
 		json.NewDecoder(request.Body).Decode(&user) // transform user struct into JSON notation
 
 		err2 := userModel.Create(&user)
 
 		if err2 != nil {
 			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return 
+			return
 		} else {
 			respondWithJson(response, http.StatusOK, user)
 		}
 	}
 }
 
-func Delete(response http.ResponseWriter, request *http.Request){
+func (userApi *UserAPI) Delete(response http.ResponseWriter, request *http.Request) {
 
 	db, err := config.Connect()
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
-		return 
+		return
 
 	} else {
 		userModel := model.UserModel{
 			Db: db,
 		}
-		
+
 		vars := mux.Vars(request)
 		id := vars["id"]
 
@@ -110,7 +111,7 @@ func Delete(response http.ResponseWriter, request *http.Request){
 
 		if err2 != nil {
 			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return 
+			return
 		} else {
 			respondWithJson(response, http.StatusOK, nil)
 			fmt.Println("Deleted user with id: " + id)
@@ -118,12 +119,12 @@ func Delete(response http.ResponseWriter, request *http.Request){
 	}
 }
 
-func Update(response http.ResponseWriter, request *http.Request){
+func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Request) {
 
 	db, err := config.Connect()
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
-		return 
+		return
 
 	} else {
 		userModel := model.UserModel{
@@ -137,20 +138,47 @@ func Update(response http.ResponseWriter, request *http.Request){
 
 		if err2 != nil {
 			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return 
+			return
 		} else {
 			respondWithJson(response, http.StatusOK, user)
 		}
 	}
 }
 
+func (userApi *UserAPI) Login(response http.ResponseWriter, request *http.Request){
 
+	db, err := config.Connect()
 
-func respondWithError(w http.ResponseWriter, code int, msg string){
-	respondWithJson(w, code, map[string]string{"error":msg})
+	if err != nil {
+		respondWithError(response, http.StatusBadRequest, err.Error())
+		return
+
+	} else {
+		userModel := model.UserModel{
+			Db: db,
+		}
+
+		var user entities.User
+		json.NewDecoder(request.Body).Decode(&user)
+
+		userModel.Login(&user)
+		// jwt, err2 := userModel.Login(&user)
+
+		// if err2 != nil {
+		// 	respondWithError(response, http.StatusBadRequest, err2.Error())
+		// 	return
+		// } else {
+		// 	respondWithJson(response, http.StatusOK, user)
+		// 	// here return generated JWT
+		// }
+	}
 }
 
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}){
+func respondWithError(w http.ResponseWriter, code int, msg string) {
+	respondWithJson(w, code, map[string]string{"error": msg})
+}
+
+func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
