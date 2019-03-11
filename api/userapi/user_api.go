@@ -4,14 +4,17 @@ import (
 	"FirstProject/config"
 	"FirstProject/entities"
 	"FirstProject/model"
+	auth "FirstProject/authentication"
 
 	"fmt"
+	"log"
+	"strings"
 	"net/http"
+	// "io/ioutil"
 
 	"encoding/json"
 
 	"github.com/gorilla/mux"
-
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -19,7 +22,10 @@ type UserAPI struct {
 }
 
 func (userApi *UserAPI) FindAll(response http.ResponseWriter, request *http.Request) {
+
 	db, err := config.Connect()
+	defer db.Session.Close()
+	
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
 		return
@@ -41,7 +47,10 @@ func (userApi *UserAPI) FindAll(response http.ResponseWriter, request *http.Requ
 }
 
 func (userApi *UserAPI) Find(response http.ResponseWriter, request *http.Request) {
+
 	db, err := config.Connect()
+	defer db.Session.Close()
+
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
 		return
@@ -67,7 +76,11 @@ func (userApi *UserAPI) Find(response http.ResponseWriter, request *http.Request
 
 func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Request) {
 
+	fmt.Println(formatRequest(request))
+
 	db, err := config.Connect()
+	defer db.Session.Close()
+
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
 		return
@@ -95,6 +108,8 @@ func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Reque
 func (userApi *UserAPI) Delete(response http.ResponseWriter, request *http.Request) {
 
 	db, err := config.Connect()
+	defer db.Session.Close()
+
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
 		return
@@ -122,6 +137,8 @@ func (userApi *UserAPI) Delete(response http.ResponseWriter, request *http.Reque
 func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Request) {
 
 	db, err := config.Connect()
+	defer db.Session.Close()
+
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
 		return
@@ -148,6 +165,7 @@ func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Reque
 func (userApi *UserAPI) Login(response http.ResponseWriter, request *http.Request){
 
 	db, err := config.Connect()
+	defer db.Session.Close()
 
 	if err != nil {
 		respondWithError(response, http.StatusBadRequest, err.Error())
@@ -161,16 +179,21 @@ func (userApi *UserAPI) Login(response http.ResponseWriter, request *http.Reques
 		var user entities.User
 		json.NewDecoder(request.Body).Decode(&user)
 
-		userModel.Login(&user)
-		// jwt, err2 := userModel.Login(&user)
+		generateJWT, err2 := userModel.Login(&user)
 
-		// if err2 != nil {
-		// 	respondWithError(response, http.StatusBadRequest, err2.Error())
-		// 	return
-		// } else {
-		// 	respondWithJson(response, http.StatusOK, user)
-		// 	// here return generated JWT
-		// }
+		if err2 != nil {
+			respondWithError(response, http.StatusBadRequest, err2.Error())
+			return
+		} else {
+			if generateJWT == "yes" {
+				token := auth.GenerateJWT(user)
+				result := model.ResponseToken{token}
+				respondWithJson(response, http.StatusOK, result)
+				
+			} else {
+				respondWithError(response, http.StatusBadRequest, "User does not exist")
+			}
+		}
 	}
 }
 
@@ -179,8 +202,40 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 }
 
 func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
+
+	response, err := json.Marshal(payload)
+
+	if err != nil {
+		log.Fatal("Error al convertir la entidad a JSON (user_api.go)")
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
 }
+
+func formatRequest(r *http.Request) string {
+	// Create return string
+	var request []string
+	// Add the request string
+	url := fmt.Sprintf("%v %v %v", r.Method, r.URL, r.Proto)
+	request = append(request, url)
+	// Add the host
+	request = append(request, fmt.Sprintf("Host: %v", r.Host))
+	// Loop through headers
+	for name, headers := range r.Header {
+	  name = strings.ToLower(name)
+	  for _, h := range headers {
+		request = append(request, fmt.Sprintf("%v: %v", name, h))
+	  }
+	}
+	
+	// If this is a POST, add post data
+	if r.Method == "POST" {
+	   r.ParseForm()
+	   request = append(request, "\n")
+	   request = append(request, r.Form.Encode())
+	} 
+	 // Return the request as a string
+	return strings.Join(request, "\n")
+   }
