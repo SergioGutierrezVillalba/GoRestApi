@@ -76,8 +76,6 @@ func (userApi *UserAPI) Find(response http.ResponseWriter, request *http.Request
 
 func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Request) {
 
-	fmt.Println(formatRequest(request))
-
 	db, err := config.Connect()
 	defer db.Session.Close()
 
@@ -94,14 +92,21 @@ func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Reque
 		user.Id = bson.NewObjectId()                // generates new id in Bson notation
 		json.NewDecoder(request.Body).Decode(&user) // transform user struct into JSON notation
 
-		err2 := userModel.Create(&user)
+		if len(user.Username) > 0 && len(user.Password) > 0 {
 
-		if err2 != nil {
-			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return
+			err2 := userModel.Create(&user)
+
+			if err2 != nil {
+				respondWithError(response, http.StatusBadRequest, err2.Error())
+				return
+			} else {
+				respondWithJson(response, http.StatusOK, user)
+			}
+
 		} else {
-			respondWithJson(response, http.StatusOK, user)
-		}
+			respondWithError(response, http.StatusBadRequest, "Campos necesarios están vacíos")
+		} 
+		
 	}
 }
 
@@ -151,14 +156,22 @@ func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Reque
 		var user entities.User
 		json.NewDecoder(request.Body).Decode(&user)
 
-		err2 := userModel.Update(&user)
+		if len(user.Username) > 0 && len(user.Password) > 0 && len(user.Id) > 0 {
+			
+			err2 := userModel.Update(&user)
 
-		if err2 != nil {
-			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return
+			if err2 != nil {
+				respondWithError(response, http.StatusBadRequest, err2.Error())
+				return
+			} else {
+				respondWithJson(response, http.StatusOK, user)
+			}
+
 		} else {
-			respondWithJson(response, http.StatusOK, user)
+			respondWithError(response, http.StatusBadRequest, "Campos necesarios están vacíos")
 		}
+
+		
 	}
 }
 
@@ -214,7 +227,22 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	w.Write(response)
 }
 
+/*func fieldsAreEmpty(r http.Request) error {
+
+	bodyReq, err := ioutil.ReadAll(r.Body)
+	var user entities.User 
+
+	if err != nil {
+		return err
+	} else {
+		json.Unmarshal(bodyReq, &user)
+		fmt.Printf("%+v\n", user.Username)
+		return nil
+	}
+}*/
+
 func formatRequest(r *http.Request) string {
+
 	// Create return string
 	var request []string
 	// Add the request string
