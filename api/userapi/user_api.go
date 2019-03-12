@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"regexp"
 	"net/http"
 	// "io/ioutil"
 
 	"encoding/json"
 
 	"github.com/gorilla/mux"
+	"github.com/go-errors/errors"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -92,13 +94,21 @@ func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Reque
 		user.Id = bson.NewObjectId()                // generates new id in Bson notation
 		json.NewDecoder(request.Body).Decode(&user) // transform user struct into JSON notation
 
-		if UsernameAlreadyExist(user.Username, userModel) {
-			respondWithError(response, http.StatusBadRequest, "Username already in use")
-			return
-		}
+		if len(user.Username) > 0 && len(user.Password) > 0 { // si no estan vacios
+			
+			if UsernameAlreadyExist(user.Username, userModel) { // compruebas si existe 
+				respondWithError(response, http.StatusBadRequest, "Username already in use")
+				return
+			}
 
-		if len(user.Username) > 0 && len(user.Password) > 0 {
-			err2 := userModel.Create(&user)
+			dataToCheck := user.Username
+
+			if errChecking := CheckSpecialChars(dataToCheck); errChecking != nil { // y si es valido
+				respondWithError(response, http.StatusBadRequest, errChecking.Error())
+				return
+			}
+
+			err2 := userModel.Create(&user) // lo creas
 
 			if err2 != nil {
 				respondWithError(response, http.StatusBadRequest, err2.Error())
@@ -107,9 +117,12 @@ func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Reque
 				respondWithJson(response, http.StatusOK, user)
 			}
 
+
 		} else {
 			respondWithError(response, http.StatusBadRequest, "Campos necesarios están vacíos")
+			return
 		} 
+
 		
 	}
 }
@@ -159,9 +172,16 @@ func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Reque
 		var user entities.User
 		json.NewDecoder(request.Body).Decode(&user)
 
-		if len(user.Username) > 0 && len(user.Password) > 0 && len(user.Id) > 0 {
+		if len(user.Username) > 0 && len(user.Password) > 0 && len(user.Id) > 0 { // compruebas si está vacio algun campo
+
+			dataToCheck := user.Username
+
+			if errChecking := CheckSpecialChars(dataToCheck); errChecking != nil { // tiene carácteres inválidos?
+				respondWithError(response, http.StatusBadRequest, errChecking.Error())
+				return
+			}
 			
-			err2 := userModel.Update(&user)
+			err2 := userModel.Update(&user) // pues actualiza
 
 			if err2 != nil {
 				respondWithError(response, http.StatusBadRequest, err2.Error())
@@ -172,6 +192,7 @@ func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Reque
 
 		} else {
 			respondWithError(response, http.StatusBadRequest, "Campos necesarios están vacíos")
+			return
 		}
 
 		
@@ -233,6 +254,7 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 }
 
 
+// Functionalities
 func UsernameAlreadyExist(username string, userModel model.UserModel) bool {
 
 	userExists := false
@@ -242,6 +264,19 @@ func UsernameAlreadyExist(username string, userModel model.UserModel) bool {
 	}
 
 	return userExists
+}
+
+func CheckSpecialChars(dataToCheck string) error {
+
+	match, _ := regexp.MatchString("[[:word:]]", dataToCheck)
+	fmt.Println(match)
+
+	if !match {
+		return errors.New(errors.Errorf("Invalid chars"))
+	}
+
+	return nil
+
 }
 
 func formatRequest(r *http.Request) string {
