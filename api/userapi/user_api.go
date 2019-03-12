@@ -23,7 +23,7 @@ type UserAPI struct {
 
 func (userApi *UserAPI) FindAll(response http.ResponseWriter, request *http.Request) {
 
-	db, err := config.Connect()
+	db, err := config.GetSession()
 	defer db.Session.Close()
 	
 	if err != nil {
@@ -48,7 +48,7 @@ func (userApi *UserAPI) FindAll(response http.ResponseWriter, request *http.Requ
 
 func (userApi *UserAPI) Find(response http.ResponseWriter, request *http.Request) {
 
-	db, err := config.Connect()
+	db, err := config.GetSession()
 	defer db.Session.Close()
 
 	if err != nil {
@@ -76,7 +76,7 @@ func (userApi *UserAPI) Find(response http.ResponseWriter, request *http.Request
 
 func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Request) {
 
-	db, err := config.Connect()
+	db, err := config.GetSession()
 	defer db.Session.Close()
 
 	if err != nil {
@@ -92,8 +92,12 @@ func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Reque
 		user.Id = bson.NewObjectId()                // generates new id in Bson notation
 		json.NewDecoder(request.Body).Decode(&user) // transform user struct into JSON notation
 
-		if len(user.Username) > 0 && len(user.Password) > 0 {
+		if UsernameAlreadyExist(user.Username, userModel) {
+			respondWithError(response, http.StatusBadRequest, "Username already in use")
+			return
+		}
 
+		if len(user.Username) > 0 && len(user.Password) > 0 {
 			err2 := userModel.Create(&user)
 
 			if err2 != nil {
@@ -112,7 +116,7 @@ func (userApi *UserAPI) Create(response http.ResponseWriter, request *http.Reque
 
 func (userApi *UserAPI) Delete(response http.ResponseWriter, request *http.Request) {
 
-	db, err := config.Connect()
+	db, err := config.GetSession()
 	defer db.Session.Close()
 
 	if err != nil {
@@ -130,18 +134,17 @@ func (userApi *UserAPI) Delete(response http.ResponseWriter, request *http.Reque
 		err2 := userModel.Delete(id)
 
 		if err2 != nil {
-			respondWithError(response, http.StatusBadRequest, err2.Error())
+			respondWithError(response, http.StatusBadRequest, "Invalid id")
 			return
 		} else {
-			respondWithJson(response, http.StatusOK, nil)
-			fmt.Println("Deleted user with id: " + id)
+			respondWithJson(response, http.StatusOK, "Deleted user with id: " + id)
 		}
 	}
 }
 
 func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Request) {
 
-	db, err := config.Connect()
+	db, err := config.GetSession()
 	defer db.Session.Close()
 
 	if err != nil {
@@ -177,7 +180,7 @@ func (userApi *UserAPI) Update(response http.ResponseWriter, request *http.Reque
 
 func (userApi *UserAPI) Login(response http.ResponseWriter, request *http.Request){
 
-	db, err := config.Connect()
+	db, err := config.GetSession()
 	defer db.Session.Close()
 
 	if err != nil {
@@ -192,24 +195,26 @@ func (userApi *UserAPI) Login(response http.ResponseWriter, request *http.Reques
 		var user entities.User
 		json.NewDecoder(request.Body).Decode(&user)
 
-		generateJWT, err2 := userModel.Login(&user)
+		mustCreateJWT, err2 := userModel.Login(&user)
 
 		if err2 != nil {
-			respondWithError(response, http.StatusBadRequest, err2.Error())
-			return
+			respondWithError(response, http.StatusBadRequest, "User doesn't exist")
 		} else {
-			if generateJWT == "yes" {
+			if mustCreateJWT {
 				token := auth.GenerateJWT(user)
 				result := model.ResponseToken{token}
 				respondWithJson(response, http.StatusOK, result)
 				
 			} else {
-				respondWithError(response, http.StatusBadRequest, "User does not exist")
+				respondWithError(response, http.StatusBadRequest, "Invalid data")
+				return
 			}
 		}
 	}
 }
 
+
+// Response methods
 func respondWithError(w http.ResponseWriter, code int, msg string) {
 	respondWithJson(w, code, map[string]string{"error": msg})
 }
@@ -227,19 +232,17 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	w.Write(response)
 }
 
-/*func fieldsAreEmpty(r http.Request) error {
 
-	bodyReq, err := ioutil.ReadAll(r.Body)
-	var user entities.User 
+func UsernameAlreadyExist(username string, userModel model.UserModel) bool {
 
-	if err != nil {
-		return err
-	} else {
-		json.Unmarshal(bodyReq, &user)
-		fmt.Printf("%+v\n", user.Username)
-		return nil
+	userExists := false
+
+	if _ , err := userModel.FindByUsername(username); err == nil {
+		userExists = true
 	}
-}*/
+
+	return userExists
+}
 
 func formatRequest(r *http.Request) string {
 

@@ -22,7 +22,7 @@ func InitializeConnection(){ // first time goes so slow
 
 }
 
-func Connect() (*mgo.Database, error){
+func GetSession() (*mgo.Database, error){
 
 	if session == nil {
 		fmt.Println("Session not exist...")

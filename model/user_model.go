@@ -2,8 +2,6 @@ package model
 
 import (
 	"FirstProject/entities"
-
-	"log"
 	"fmt"
 
 	mgo "gopkg.in/mgo.v2"
@@ -51,7 +49,7 @@ func (userModel UserModel) Create(user *entities.User) error {
 	return userModel.Db.C("users").Insert(&user)
 }
 
-func (userModel UserModel) Delete(id string) error {
+func (userModel UserModel) Delete(id string) error { 
 	return userModel.Db.C("users").RemoveId(bson.ObjectIdHex(id))
 }
 
@@ -59,28 +57,27 @@ func (userModel UserModel) Update(user *entities.User) error {
 	return userModel.Db.C("users").UpdateId(user.Id, user)
 }
 
-func (userModel UserModel) Login(user *entities.User) (response string, err error) {
+func (userModel UserModel) Login(user *entities.User) (response bool, err error) {
 
 	fmt.Println(user.Password)
 	pwd := []byte(user.Password)
-	
 
+	response = false
+	
 	if userDb, err := userModel.FindByUsername(user.Username); err != nil {
-		log.Fatal("El usuario no existe")
-		response = "no"
 		return response, err
 
 	} else {
-		err = bcrypt.CompareHashAndPassword([]byte(userDb.Password), pwd) // if err = nil, succesful login
+		
+		err2 := bcrypt.CompareHashAndPassword([]byte(userDb.Password), pwd) // if err = nil, succesful login
 
-		if err == nil {
+		if err2 == nil {
 			fmt.Println("Logged")
-			response = "yes"
-			return response, err
+			response = true
+			return response, nil
 		} else {
-			fmt.Println("Wrong password, password used: " + user.Password)
-			response = "no"
-			return response, err
+			fmt.Println("Wrong password")
+			return response, nil
 		}
 	}
 	// Debugging purposes
