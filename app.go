@@ -26,8 +26,8 @@ func main() {
 	r.HandleFunc("/users", userapi.Create).Methods("POST")
 	r.HandleFunc("/login", userapi.Login).Methods("POST")
 	r.HandleFunc("/sendrecover", userapi.SendRecover).Methods("POST")
-	
-	r.HandleFunc("/recoverpwd", userapi.Recover).Methods("PATCH")
+
+	r.HandleFunc("/reset", userapi.Reset).Methods("PATCH")
 
 	r.HandleFunc("/users", userapi.Update).Methods("PUT")
 
@@ -38,7 +38,7 @@ func main() {
 	// BACKEND CONNECTION PERMISSIONS
 	corsObj := handlers.AllowedOrigins([]string{"*"})
 
-	if err := http.ListenAndServe(":3001", handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}), corsObj)(r)); err != nil {
+	if err := http.ListenAndServe(":3001", handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH"}), corsObj)(r)); err != nil {
 		log.Fatal(err)
 	} else {
 		fmt.Println("Listening on port 3001....")

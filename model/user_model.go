@@ -72,7 +72,6 @@ func (userModel UserModel) Login(user *entities.User) (response bool, err error)
 		return response, err
 
 	} else {
-		
 		err2 := bcrypt.CompareHashAndPassword([]byte(userDb.Password), pwd) // if err = nil, correct password
 
 		if err2 == nil {
@@ -88,13 +87,41 @@ func (userModel UserModel) Login(user *entities.User) (response bool, err error)
 	// GeneratePasswordHashed(pwd)
 }
 
-func (userModel UserModel) GetEmailUser(username string) (entities.User, error){
+func (userModel UserModel) GetEmailUser(username string) (entities.User, string, error){
 	
 	var user entities.User
+	token := string(GeneratePasswordHashed([]byte(username)))
 	
 	err:= userModel.Db.C("users").Find(bson.M{"username": username}).One(&user)
 
-	return user, err
+	return user, token, err
+}
+
+func (userModel UserModel) SaveToken(token string, username string){
+	user, _ := UserModel.FindByUsername(userModel, username)
+	user.Token = token
+	UserModel.Update(userModel, &user)
+}
+
+func (userModel UserModel) Recover(token string, password string) error {
+
+	var user entities.User
+	err := userModel.Db.C("users").Find(bson.M{"token": token}).One(&user)
+
+	if err != nil {
+		return err
+	}
+
+	password = string(GeneratePasswordHashed([]byte(password)))
+	user.Password = password
+	user.Token = ""
+	
+	if err2:= userModel.Update(&user); err2 != nil {
+		return err2
+	}
+
+	return nil
+
 }
 
 // Functionalities
@@ -107,7 +134,5 @@ func GeneratePasswordHashed(pwd []byte) []byte {
 		panic(err)
 	}
 
-	fmt.Println(string(hashedPwd))
 	return hashedPwd
-
 }

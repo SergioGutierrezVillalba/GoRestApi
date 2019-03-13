@@ -246,38 +246,53 @@ func (userApi *UserAPI) SendRecover(response http.ResponseWriter, request *http.
 	} 
 
 	if !UsernameAlreadyExists(user.Username, userModel) { // no existe este usuario?
-		respondWithError(response, http.StatusBadRequest, "User doesn't exist")
+		respondWithError(response, http.StatusBadRequest, "User not found")
 		return
 	} 
 
-	if email, err:= GetEmailUser(user.Username, userModel); err != nil {
-		respondWithError(response, http.StatusBadRequest, "Problem with email in db")
+	if email, token, err:= GetEmailUser(user.Username, userModel); err != nil {
+		respondWithError(response, http.StatusBadRequest, "Email not found")
+
 	} else {
 		fmt.Println(email)
-		
+		fmt.Println("Token: " + token)
 		var mailSender entities.MailSender
-		mailSender.Send(email, user.Username)
+
+		if err:= mailSender.Send(email, token); err != nil {
+			respondWithError(response, http.StatusBadRequest, "SendingError")
+			return
+		}	
+
+		SaveToken(token, user.Username, userModel)
 	}	
 
 }
 
-func (userApi *UserAPI) Recover(response http.ResponseWriter, request *http.Request){
+func (userApi *UserAPI) Reset(response http.ResponseWriter, request *http.Request){
 
-	// db, err := config.GetSession()
-	// defer db.Session.Close()
+	db, err := config.GetSession()
+	defer db.Session.Close()
 
-	// if err != nil {
-	// 	respondWithError(response, http.StatusBadRequest, err.Error())
-	// 	return
-	// }
+	if err != nil {
+		respondWithError(response, http.StatusBadRequest, err.Error())
+		return
+	}
 
-	// userModel := model.UserModel{
-	// 	Db: db,
-	// }
+	userModel := model.UserModel{ Db: db }
+	var passwordRecover entities.PasswordRecover
+	json.NewDecoder(request.Body).Decode(&passwordRecover)
 
-	// var user entities.User
-	// json.NewDecoder(request.Body).Decode(&user)
+	if len(passwordRecover.Token) <= 0 || len(passwordRecover.NewPassword) <= 0 {
+		respondWithError(response, http.StatusBadRequest, "Needed fields empty")
+		return
+	}
 
+	if err:= userModel.Recover(passwordRecover.Token, passwordRecover.NewPassword); err != nil {
+		respondWithError(response, http.StatusBadRequest, "ResetPasswordError")
+		return
+	}
+
+	respondWithJson(response, http.StatusOK, "Password reset")
 }
 
 // Response methods
@@ -310,9 +325,9 @@ func UsernameAlreadyExists(username string, userModel model.UserModel) bool {
 	return userExists
 }
 
-func GetEmailUser(username string, userModel model.UserModel)(string, error){
-	user, err:= userModel.GetEmailUser(username)
-	return user.Email, err
+func GetEmailUser(username string, userModel model.UserModel)(string, string, error){
+	user, token, err:= userModel.GetEmailUser(username)
+	return user.Email, token, err
 }
 
 func CheckSpecialChars(dataToCheck string) error {
@@ -326,6 +341,10 @@ func CheckSpecialChars(dataToCheck string) error {
 
 	return nil
 
+}
+
+func SaveToken(token string, username string, userModel model.UserModel){
+	userModel.SaveToken(token, username)
 }
 
 func formatRequest(r *http.Request) string {

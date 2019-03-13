@@ -7,12 +7,12 @@ import (
 
 type MailSender struct{}
 
-func (mailSender *MailSender)Send(email string, username string){
+func (mailSender *MailSender)Send(email string, token string) error {
 
 	from := "sendermail495@gmail.com"
 	pass := "mail888mail"
 	to := email
-	urlToRecover := "http://localhost:4002/recover/" + username
+	urlToRecover := "http://localhost:4002/recover/" + token
 
 	msg:= "From: "+ from + "\n" +
 		  "To: "+ to + "\n" +
@@ -25,8 +25,10 @@ func (mailSender *MailSender)Send(email string, username string){
 
 	if err != nil {
 		log.Printf("smtp error: %s", err)
-		return
+		return err
 	}
 
 	log.Print("sent")
+	return err
+	
 }
