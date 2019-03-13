@@ -22,10 +22,18 @@ func main() {
 	// ROUTES
 	r.HandleFunc("/users", userapi.FindAll).Methods("GET")
 	r.HandleFunc("/users/{id}", userapi.Find).Methods("GET")
+
 	r.HandleFunc("/users", userapi.Create).Methods("POST")
 	r.HandleFunc("/login", userapi.Login).Methods("POST")
-	r.HandleFunc("/users/{id}", userapi.Delete).Methods("DELETE")
+	r.HandleFunc("/sendrecover", userapi.SendRecover).Methods("POST")
+	
+	r.HandleFunc("/recoverpwd", userapi.Recover).Methods("PATCH")
+
 	r.HandleFunc("/users", userapi.Update).Methods("PUT")
+
+	r.HandleFunc("/users/{id}", userapi.Delete).Methods("DELETE")
+	
+	
 	
 	// BACKEND CONNECTION PERMISSIONS
 	corsObj := handlers.AllowedOrigins([]string{"*"})

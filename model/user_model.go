@@ -46,6 +46,10 @@ func (userModel UserModel) FindByUsername(username string) (entities.User, error
 }
 
 func (userModel UserModel) Create(user *entities.User) error {
+
+	pwd := []byte(user.Password)
+	user.Password = string(GeneratePasswordHashed(pwd))
+
 	return userModel.Db.C("users").Insert(&user)
 }
 
@@ -69,7 +73,7 @@ func (userModel UserModel) Login(user *entities.User) (response bool, err error)
 
 	} else {
 		
-		err2 := bcrypt.CompareHashAndPassword([]byte(userDb.Password), pwd) // if err = nil, succesful login
+		err2 := bcrypt.CompareHashAndPassword([]byte(userDb.Password), pwd) // if err = nil, correct password
 
 		if err2 == nil {
 			fmt.Println("Logged")
@@ -84,16 +88,26 @@ func (userModel UserModel) Login(user *entities.User) (response bool, err error)
 	// GeneratePasswordHashed(pwd)
 }
 
+func (userModel UserModel) GetEmailUser(username string) (entities.User, error){
+	
+	var user entities.User
+	
+	err:= userModel.Db.C("users").Find(bson.M{"username": username}).One(&user)
 
-func GeneratePasswordHashed(pwd []byte){
+	return user, err
+}
+
+// Functionalities
+func GeneratePasswordHashed(pwd []byte) []byte {
 
 	// Hashing the password with the default cost of 10
 	hashedPwd, err := bcrypt.GenerateFromPassword(pwd, bcrypt.DefaultCost)
 
 	if err != nil {
 		panic(err)
-	} else {
-		fmt.Println(string(hashedPwd))
 	}
+
+	fmt.Println(string(hashedPwd))
+	return hashedPwd
 
 }
