@@ -3,13 +3,13 @@ package validation
 import (
 	// "fmt"
 	"FirstProject/core/usecases"
+	"FirstProject/model"
 	"regexp"
 )
 
 type Checker struct {}
 
 var userUsecase usecases.UserUsecase
-
 
 func (checker *Checker) UsernameAlreadyExists(username string) bool {
 
@@ -41,7 +41,17 @@ func (checker *Checker) HasFieldsRequired(fieldsRequired []string) bool{
 	}
 
 	return hasAllFields
+}
 
+func (checker *Checker) HasPermissions(role string, httpRequestMethod string) bool {
+
+	givePermission := false
+
+	if role == "admin" {
+		givePermission = true
+	}
+
+	return givePermission
 }
 
 func (checker *Checker) JwtIsCorrect(jwtReceived string) bool {
@@ -57,17 +67,13 @@ func (checker *Checker) JwtIsCorrect(jwtReceived string) bool {
 	return isCorrect
 }
 
-func (checker *Checker) HasPermissions(role string, httpRequestMethod string) bool {
+func (checker *Checker) IsUpdatingItself(userRequesting model.User, userToUpdate model.User) bool {
+	
+	isUpdatingItself := false
 
-	givePermission := false
-
-	if role == "admin" {
-		givePermission = true
-	} else {
-		if httpRequestMethod == "PUT" {
-			givePermission = true
-		}
+	if userRequesting.Username == userToUpdate.Username {
+		isUpdatingItself = true
 	}
 
-	return givePermission
+	return isUpdatingItself
 }

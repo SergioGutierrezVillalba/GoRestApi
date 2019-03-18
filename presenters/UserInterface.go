@@ -19,10 +19,13 @@ type UserInterface struct {}
 
 var (
 	userUsecase 	usecases.UserUsecase
+
 	respond 		model.Responser
 	mailSender  	model.MailSender
+
 	crypter     	auth.Crypter
 	requestHeaders 	auth.RequestHeaders
+
 	checker 		validation.Checker
 )
 
@@ -100,30 +103,51 @@ func (userInterface *UserInterface) CreateUser(response http.ResponseWriter, req
 
 func (userInterface *UserInterface) UpdateUser(response http.ResponseWriter, request *http.Request){
 	
-	var user model.User
+	SetHeaders(request)
+
+	var userToUpdate model.User
 	var fieldsRequired []string
+	jwtSent := requestHeaders.Authorization
 
-	json.NewDecoder(request.Body).Decode(&user)
+	json.NewDecoder(request.Body).Decode(&userToUpdate)
 
-	fieldsRequired = append(fieldsRequired, user.Username, user.Password, user.Email)
+	if userToUpdate.Id == "" {
+		respond.WithError(response, http.StatusBadRequest, "EmptyIdError")
+		return
+	}
+
+	fieldsRequired = append(fieldsRequired, userToUpdate.Username, userToUpdate.Password, userToUpdate.Email, jwtSent)
 
 	if !checker.HasFieldsRequired(fieldsRequired){
 		respond.WithError(response, http.StatusBadRequest, "EmptyDataError")
 		return
 	}
 
-	user.Password, _ = crypter.Crypt(user.Password)
-	user.Role = "user"
+	if !checker.JwtIsCorrect(jwtSent){
+		respond.WithError(response, http.StatusBadRequest, "FalseJwt")
+		return
+	}
 
-	err:= userUsecase.UpdateUser(user)
+	userRequesting, _ := userUsecase.GetUserByJwt(jwtSent)
 
-	if err != nil {
-		respond.WithError(response, http.StatusBadRequest, err.Error())
+	if userRequesting.Role == "user" {
+		if !checker.IsUpdatingItself(userRequesting, userToUpdate){
+			respond.WithError(response, http.StatusBadRequest, "UserPermissionsError")
+			return
+		}
+	}
+
+	userToUpdate.Password, _ = crypter.Crypt(userToUpdate.Password)
+	userToUpdate.Role = "user"
+
+	err2 := userUsecase.UpdateUser(userToUpdate)
+
+	if err2 != nil {
+		respond.WithError(response, http.StatusBadRequest, err2.Error())
 		return
 	} 
 		
 	respond.WithJson(response, http.StatusOK, "Success")
-
 }
 
 func (userInterface *UserInterface) DeleteUser(response http.ResponseWriter, request *http.Request){
@@ -268,6 +292,10 @@ func (userInterface *UserInterface) Reset(response http.ResponseWriter, request 
 
 
 // Func
+func SetHeaders(request *http.Request){
+	requestHeaders.SetHeaders(request)
+}
+
 func GetIdFromUrl(request *http.Request) string {
 
 	vars := mux.Vars(request)
@@ -295,14 +323,13 @@ func SaveToken(token string, username string) error {
 
 func GetAuth(request *http.Request, httpMethodRequested string) (doAction bool, msg string) {
 
+	SetHeaders(request)
+
 	doAction = true
 	msg = "Success"
-	
-	requestHeaders.SetHeaders(request)
 	jwtSent := requestHeaders.Authorization
 
-	fmt.Println(jwtSent)
-	
+
 	if !checker.HasFieldsRequired([]string {jwtSent}){
 		fmt.Println("Aquí estoy, linea 320")
 		msg = "EmptyJwtError"
@@ -310,6 +337,8 @@ func GetAuth(request *http.Request, httpMethodRequested string) (doAction bool, 
 		return
 	}
 
+	fmt.Println("JWT: " + jwtSent)
+	fmt.Println("Aqui estoy, linea 339")
 	if !checker.JwtIsCorrect(jwtSent){
 		fmt.Println("Aquí estoy, linea 327")
 		msg = "JwtError"

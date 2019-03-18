@@ -5,7 +5,7 @@ import (
 )
 
 type User struct{
-	Id 		 	bson.ObjectId `bson:"_id"      json:"id"`
+	Id 		 	bson.ObjectId `bson:"_id"      json:"id,omitempty"`
 	Username 	string  	  `bson:"username" json:"username"`
 	Password 	string        `bson:"password" json:"password"`
 	Role 	 	string        `bson:"role"     json:"role"`
