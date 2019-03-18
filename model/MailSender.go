@@ -1,11 +1,11 @@
-package entities
+package model
 
 import (
 	"log"
 	"net/smtp"
 )
 
-type MailSender struct{}
+type MailSender struct {}
 
 func (mailSender *MailSender)Send(email string, token string) error {
 

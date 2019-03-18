@@ -1,4 +1,4 @@
-package authentication
+package auth
 
 import (
 	"crypto/rsa"
@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"FirstProject/model"
-	"FirstProject/entities"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )
@@ -39,8 +38,8 @@ func init() {
 	}
 }
 
-func GenerateJWT(user entities.User) string {
-	claims := model.Claim{
+func GenerateJWT(user model.User) string {
+	claims := Claim{
 		User: user,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),

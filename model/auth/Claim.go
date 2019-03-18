@@ -1,14 +1,14 @@
-package model
+package auth
 
 import (
 	
 	jwt "github.com/dgrijalva/jwt-go"
 
-	"FirstProject/entities"
+	"FirstProject/model"
 )
 
 type Claim struct {
-	entities.User `json:"user"`
+	model.User `json:"user"`
 	jwt.StandardClaims
 
 }
