@@ -2,26 +2,23 @@ package validation
 
 import (
 	// "fmt"
-	"FirstProject/core/usecases"
 	"FirstProject/model"
 	"regexp"
 )
 
 type Checker struct {}
 
-var userUsecase usecases.UserUsecase
+// func (checker *Checker) UsernameAlreadyExists(username string) bool {
 
-func (checker *Checker) UsernameAlreadyExists(username string) bool {
+// 	userExists := false
+// 	_ , err := userUsecase.GetUserByUsername(username)
 
-	userExists := false
-	_ , err := userUsecase.GetUserByUsername(username)
+// 	if err == nil {
+// 		userExists = true
+// 	}
 
-	if err == nil {
-		userExists = true
-	}
-
-	return userExists
-}
+// 	return userExists
+// }
 
 func (checker *Checker) CheckSpecialChars(dataToCheck string) error {
 
@@ -52,19 +49,6 @@ func (checker *Checker) HasPermissions(role string, httpRequestMethod string) bo
 	}
 
 	return givePermission
-}
-
-func (checker *Checker) JwtIsCorrect(jwtReceived string) bool {
-
-	isCorrect := false
-
-	err := userUsecase.FindJwt(jwtReceived)
-
-	if err == nil {
-		isCorrect = true
-	}
-
-	return isCorrect
 }
 
 func (checker *Checker) IsUpdatingItself(userRequesting model.User, userToUpdate model.User) bool {

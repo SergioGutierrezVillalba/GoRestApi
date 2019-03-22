@@ -11,6 +11,8 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
+type Authentication struct{}
+
 var (
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
@@ -38,12 +40,14 @@ func init() {
 	}
 }
 
-func GenerateJWT(user model.User) string {
+func (authentication *Authentication) GenerateJWT(user model.User) string { 
+	// SOLID alert: violation of SRP generate jwt will only receive info about content, 
+	// but doesn't need to know about the existence of model.User
 	claims := Claim{
 		User: user,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
-			Issuer: "App usuarios",
+			Issuer: "App Timer",
 		},
 	}
 

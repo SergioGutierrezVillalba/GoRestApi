@@ -1,9 +1,11 @@
 package entities 
 
 import (
-	// "fmt"
+	
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+
+	"errors"
 
 	"FirstProject/model"
 	"FirstProject/model/database"
@@ -12,6 +14,8 @@ import (
 type Repository struct {
 	Db *mgo.Database
 }
+
+// USERS
 
 func (repository *Repository) GetUsers() ([]model.User, error){
 
@@ -56,7 +60,7 @@ func (repository *Repository) GetUserByUsername(username string) (model.User, er
 	var user model.User
 
 	if err != nil {
-		return user, err
+		return user, errors.New("DatabaseError")
 	}
 
 	err = db.C("users").Find(bson.M{"username": username}).One(&user)
@@ -124,6 +128,7 @@ func (repository *Repository) FindJwt(jwt string) error {
 	}
 
 	err2 := db.C("users").Find(bson.M{"jwt": jwt}).One(&user)
+
 	return err2
 }
 
@@ -145,7 +150,7 @@ func (repository *Repository) UpdateUser(user model.User) error{
 	defer CloseSession(db)
 
 	if err != nil {
-		return err
+		return errors.New("UpdateUserError")
 	}
 
 	return db.C("users").UpdateId(user.Id, user)
@@ -162,6 +167,72 @@ func (repository *Repository) DeleteUser(userId string) error{
 
 	return db.C("users").RemoveId(bson.ObjectIdHex(userId))
 }
+
+
+// TIMER
+
+func (repository *Repository) GetTimers() ([] model.Timer, error){
+
+	db, err := GetSession()
+	defer CloseSession(db)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var timers []model.Timer
+
+	if err := db.C("times").Find(bson.M{}).All(&timers); err != nil {
+		return nil, err
+	} 
+
+	return timers, nil
+}
+
+func (repository *Repository) GetTimeById(timeId string) (model.Timer, error) {
+
+	var timer model.Timer
+	
+	db, err := GetSession()
+	defer CloseSession(db)
+
+	if err != nil {
+		return timer, err
+	}
+
+	err = db.C("times").FindId(bson.ObjectIdHex(timeId)).One(&timer);
+
+	return timer, err
+}
+
+func (repository *Repository) InsertStartTime(time model.Timer) error {
+
+	db, err := GetSession()
+	defer CloseSession(db)
+
+	if err != nil {
+		return err
+	}
+
+	if err := db.C("times").Insert(&time); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository *Repository) InsertFinishTime(time model.Timer) error {
+
+	db, err := GetSession()
+	defer CloseSession(db)
+
+	if err != nil {
+		return errors.New("UpdateTimeError")
+	}
+
+	return db.C("times").UpdateId(time.Id, time)
+}
+
 
 
 // Functionalities
