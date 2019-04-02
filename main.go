@@ -4,54 +4,95 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"FirstProject/controllers"
+	
 	"FirstProject/model/database"
+	"FirstProject/auth"
 
+	usersController "FirstProject/Domains/user/controller"
+
+	usersUsecase "FirstProject/Domains/user/usecase"
+	timersUsecase "FirstProject/Domains/timer/usecase"
+
+	usersRepo "FirstProject/Domains/user/entity"
+	timersRepo "FirstProject/Domains/timer/entity"
+	
 	"github.com/gorilla/mux"
 	"github.com/gorilla/handlers"
 )
 
 var (
-	userInterface 	controllers.UserInterface
-	timerInterface 	controllers.TimerInterface
+	db				database.Db
+	gAuthToken		auth.GAuthToken
 )
 
 func main(){
-	StartDBConnection()
+	db.StartConnection()
 	StartApi()
-}
-
-func StartDBConnection(){
-	database.StartConnection()
 }
 
 func StartApi(){
 
 	r := mux.NewRouter()
 
-	SetRoutesToApi(r)
+	// REPOS
+	usersRepo := usersRepo.NewMongoDbRepository(db.Session)
+	timersRepo := timersRepo.NewMongoDbRepository(db.Session)
+
+	// USECASES
+	usersUsecase := usersUsecase.NewUsecase(usersRepo)
+	timersUsecase := timersUsecase.NewUsecase(timersRepo)
+
+	// INTERFACES
+	usersController := usersController.NewUsersController(usersUsecase, timersUsecase)
+
+
+	// USERS HANDLERS
+	getMe := gAuthToken.Middleware(http.HandlerFunc(usersController.GetUserByJwt), db.Session, "GetMe")
+	getUsers := gAuthToken.Middleware(http.HandlerFunc(usersController.GetAllUsers), db.Session, "GetAllUsers")
+	getUserById := gAuthToken.Middleware(http.HandlerFunc(usersController.GetUserById), db.Session, "GetUserById")
+	createUser := gAuthToken.Middleware(http.HandlerFunc(usersController.CreateUser), db.Session, "CreateUser")
+	updateUser := gAuthToken.Middleware(http.HandlerFunc(usersController.UpdateUser), db.Session, "UpdateUser")
+	deleteUser := gAuthToken.Middleware(http.HandlerFunc(usersController.DeleteUser), db.Session, "DeleteUser")
+	register := http.HandlerFunc(usersController.Register)
+	login := http.HandlerFunc(usersController.Login)
+	sendRecover := http.HandlerFunc(usersController.SendRecover)
+	resetPassword := http.HandlerFunc(usersController.ResetPassword)
+
+	// TIMERS HANDLERS
+	getTimers := gAuthToken.Middleware(http.HandlerFunc(usersController.GetAllTimers), db.Session, "GetAllTimers")
+	getTimerById := gAuthToken.Middleware(http.HandlerFunc(usersController.GetTimerById), db.Session, "GetTimerById")
+	getTimersByUserId := gAuthToken.Middleware(http.HandlerFunc(usersController.GetTimersByUserId), db.Session, "GetTimersByUserId")
+	createTimer := gAuthToken.Middleware(http.HandlerFunc(usersController.CreateTimer), db.Session, "CreateTimer")
+	updateTimer := gAuthToken.Middleware(http.HandlerFunc(usersController.UpdateTimer), db.Session, "UpdateTimer")
+	deleteTimer := gAuthToken.Middleware(http.HandlerFunc(usersController.DeleteTimer), db.Session, "DeleteTimer")
+	startTimer := gAuthToken.Middleware(http.HandlerFunc(usersController.StartTimer), db.Session, "StartTimer")
+	finishTimer := gAuthToken.Middleware(http.HandlerFunc(usersController.FinishTimer), db.Session, "FinishTimer")
+
+	// USERS ROUTES
+	r.Handle("/user", getMe).Methods("GET")
+	r.Handle("/users", getUsers).Methods("GET")
+	r.Handle("/users/{id}", getUserById).Methods("GET")
+	r.Handle("/users", createUser).Methods("POST")
+	r.Handle("/users", updateUser).Methods("PUT")
+	r.Handle("/users/{id}", deleteUser).Methods("DELETE")
+	r.Handle("/users/login", login).Methods("POST")
+	r.Handle("/users/register", register).Methods("POST")
+	r.Handle("/users/sendrecover", sendRecover).Methods("POST")
+	r.Handle("/users/reset", resetPassword).Methods("PATCH")
+
+
+	// TIMERS ROUTES
+	r.Handle("/timers", getTimers).Methods("GET")
+	r.Handle("/timers/{id}", getTimerById).Methods("GET")
+	r.Handle("/timers/users/{id}", getTimersByUserId).Methods("GET")
+	r.Handle("/timers", createTimer).Methods("POST")
+	r.Handle("/timers", updateTimer).Methods("PUT")
+	r.Handle("/timers/{id}", deleteTimer).Methods("DELETE")
+	r.Handle("/timers/start", startTimer).Methods("POST")
+	r.Handle("/timers/finish", finishTimer).Methods("POST")
+
 	StartServerAndAllowConections(r)
-}
 
-func SetRoutesToApi(r *mux.Router){
-	// USERS
-	r.HandleFunc("/users", userInterface.GetUsers).Methods("GET")
-	r.HandleFunc("/users/{id}", userInterface.GetUserById).Methods("GET")
-	r.HandleFunc("/users", userInterface.CreateUser).Methods("POST")
-	r.HandleFunc("/login", userInterface.Login).Methods("POST")
-	r.HandleFunc("/sendrecover", userInterface.SendRecover).Methods("POST")
-	r.HandleFunc("/reset", userInterface.Reset).Methods("PATCH")
-	r.HandleFunc("/users", userInterface.UpdateUser).Methods("PUT")
-	r.HandleFunc("/users/{id}", userInterface.DeleteUser).Methods("DELETE")
-
-
-	// TIMER
-	r.HandleFunc("/timers", timerInterface.GetTimers).Methods("GET")
-	// r.HandleFunc("/timers/{id}", timerInterface.GetTimerById).Methods("GET")
-	// r.HandleFunc("/timers/users/{id}", timerInterface.GetTimersByUserId).Methods("POST")
-	r.HandleFunc("/startTimer", timerInterface.InitCountTime).Methods("POST")
-	r.HandleFunc("/finishTimer", timerInterface.FinishCountTime).Methods("POST")
 }
 
 func StartServerAndAllowConections(r *mux.Router){

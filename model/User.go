@@ -12,4 +12,5 @@ type User struct{
 	Email    	string	      `bson:"email"    json:"email"`
 	Token    	string	      `bson:"token"    json:"token"`
 	Jwt      	string		  `bson:"jwt"      json:"jwt"`
+	RawId		string		  `bson:"rawId"	   json"raw"`
 }

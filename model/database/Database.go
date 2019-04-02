@@ -10,37 +10,32 @@ import (
 var (
 	host = "mongodb://localhost:27017"
 	dbName = "project"
-	session *mgo.Session
 )
 
-// var host = "mongodb://localhost:27017"
-// var dbName = "project"
-// var session *mgo.Session
+type Db struct {
+	Session *mgo.Session
+}
 
-func StartConnection(){
+func (db *Db) StartConnection(){
 
 	var err error
-	if session, err = mgo.Dial(host); err != nil {
+	if db.Session, err = mgo.Dial(host); err != nil {
 		log.Fatal(err)
 	} 
 
 	fmt.Println("Session started...")
-
 }
 
-func GetSession() (*mgo.Database, error){
+func (db *Db) GetSession() *mgo.Session {
 
-	if session == nil {
+	if db.Session == nil {
 		fmt.Println("Session doesn't exist...")
-		StartConnection()
+		db.StartConnection()
 	}
 
-	sess := session.Clone()
-	db := sess.DB(dbName)
-
-	return db, nil
+	return db.Session.Clone()
 }
 
-func CloseSession(db *mgo.Database){
+func (db *Db)CloseSession(){
 	db.Session.Close()
 }
