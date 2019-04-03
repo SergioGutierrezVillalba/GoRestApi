@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"net/smtp"
 	"html/template"
+	times "FirstProject/model/times"
+
 	gomail "gopkg.in/gomail.v2"
-	// "text/template"
 )
 
 type MailSender struct {}
@@ -20,6 +21,9 @@ type ResponseEmail struct {
 	FinishDate		string
 }
 
+var (
+	timePresenter times.TimePresenter
+)
 func (m *MailSender)SendRecover(email string, token string) error {
 
 	from := "sendermail495@gmail.com"
@@ -56,11 +60,19 @@ func (ms *MailSender)SendFinishedTime(email string, timer TimerFormatted) error 
 	startInfoSliced := strings.Fields(timer.Start)
 	finishInfoSliced := strings.Fields(timer.Finish)
 
+	// INITTIME
 	startDate := startInfoSliced[0]
 	startTime := startInfoSliced[1]
 
+	// FINISHTIME
 	finishDate := finishInfoSliced[0]
 	finishTime := finishInfoSliced[1]
+
+	// DURATION-------------------------
+	fmt.Println("Duration(s):")
+	fmt.Println(timer.Duration)
+
+	duration := timePresenter.SecondsToHuman(int(timer.Duration))
 
 	fmt.Println("StartDate : " + startDate + "|" + "StartTime: " + startTime)
 	fmt.Println("FinishDate : " + finishDate + "|" + "FinishTime: " + finishTime)
@@ -83,11 +95,13 @@ func (ms *MailSender)SendFinishedTime(email string, timer TimerFormatted) error 
 			Finish			string
 			StartDate		string
 			FinishDate		string
+			Duration		string
 		}{
 			Start:			startTime,
 			Finish:			finishTime,
 			StartDate:		startDate,
-			FinishDate:		finishDate,		
+			FinishDate:		finishDate,	
+			Duration:		duration,
 		})
 
 	if err != nil {
