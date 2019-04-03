@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"net/smtp"
 	"html/template"
+	// "time"
 	times "FirstProject/model/times"
-
+	// durafmt "github.com/hako/durafmt"
 	gomail "gopkg.in/gomail.v2"
+	// "text/template"
 )
 
 type MailSender struct {}
@@ -24,6 +26,7 @@ type ResponseEmail struct {
 var (
 	timePresenter times.TimePresenter
 )
+
 func (m *MailSender)SendRecover(email string, token string) error {
 
 	from := "sendermail495@gmail.com"
@@ -74,6 +77,25 @@ func (ms *MailSender)SendFinishedTime(email string, timer TimerFormatted) error 
 
 	duration := timePresenter.SecondsToHuman(int(timer.Duration))
 
+	// durationTime := time.Unix(0, timer.Duration)
+	// fmt.Println("DurationTime(Time):")
+	// fmt.Println(durationTime)
+
+	// durationTimeSince := time.Since(durationTime)
+	// fmt.Println("DurationTimeSince(Time):")
+	// fmt.Println(durationTimeSince)
+	
+	// duration := durationTimeSince.String()
+
+	// durationfmt, err2 := durafmt.ParseString(duration)
+	// durationPretty := durationfmt.String()
+	//---------------------------------
+
+	// if err2 != nil {
+	// 	fmt.Println("Error prettyformatting")
+	// }
+	//
+
 	fmt.Println("StartDate : " + startDate + "|" + "StartTime: " + startTime)
 	fmt.Println("FinishDate : " + finishDate + "|" + "FinishTime: " + finishTime)
 
@@ -101,7 +123,7 @@ func (ms *MailSender)SendFinishedTime(email string, timer TimerFormatted) error 
 			Finish:			finishTime,
 			StartDate:		startDate,
 			FinishDate:		finishDate,	
-			Duration:		duration,
+			Duration:		duration,	
 		})
 
 	if err != nil {
