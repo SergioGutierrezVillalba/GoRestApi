@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .landing-page{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
+        }
+        .email{
+            text-align: center;
+            background-color:#609CE1;
+            width: 50%;
+            margin: 0 auto;
+        }
+        .email__header {
+            color: #133863;
+            padding-top: 10px;
+        }
+
+        .email__title {
+            margin-top: 10px;
+        }
+        .email__subtitle{
+            text-align: initial;
+            color: #236AB9;
+        }
+
+        .email__content {
+            background-color: #E1ECF9;
+            /* margin-left: 5%; */
+        }
+
+        .email__image {}
+
+        .email__text {
+            margin: 0;
+        }
+
+        .list {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0;
+        }
+        .list--style{
+            color: black;
+        }
+        .list__item {
+            width: 49.6%;
+        }
+
+        .banner{
+            padding: 1rem;
+        }
+        .banner__header{
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .banner__content{
+            padding: 10px 0;
+        }
+
+        .banner__content--timesStyle{
+            border-radius: 10px;
+            background-color: white;
+            margin: 0 5%;
+        }
+
+        .banner__footer{
+            padding-top: 5px;
+        }
+
+        @media (max-width: 1000px){
+            .list{
+                flex-direction: row;
+            }
+            .list__item{
+                width: 100%;
+                clear: both;
+                float: none;
+            }
+            .email{
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="landing-page">
+        <div class="email">
+            <div class="email__header">
+                <h2 class="email__title">TIMER</h2>
+            </div>
+            <div class="email__content">
+                <div class="email__image"></div>
+                <div class="email__text">
+                    <div class="list list--style">
+                        <div class="list__item">
+                            <div class="banner">
+                                <div class="banner__header">Inicio:</div>
+                                <div class="banner__content banner__content--timesStyle">{{.Start}}</div> 
+                                <div class="banner__footer">{{.StartDate}}</div>
+                            </div> 
+                        </div>
+                        <div class="list__item">
+                            <div class="banner">
+                                <div class="banner__header">Finalizacion:</div>
+                                <div class="banner__content banner__content--timesStyle">{{.Finish}}</div>
+                                <div class="banner__footer">{{.FinishDate}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
