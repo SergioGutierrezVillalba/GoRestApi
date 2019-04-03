@@ -258,7 +258,7 @@ func (u *UsersController) SendRecover(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	err = mailSender.Send(userDb.Email, token)
+	err = mailSender.SendRecover(userDb.Email, token)
 
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
@@ -512,6 +512,15 @@ func (u *UsersController)FinishTimer(w http.ResponseWriter, r *http.Request){
 	timerFormatted, err2 := formatTimerForResponse(timerDb)
 
 	if err2 != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userDb, _ := u.UsersUsecase.GetById(timerDb.UserId)
+
+	err = mailSender.SendFinishedTime(userDb.Email, timerFormatted)
+
+	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
