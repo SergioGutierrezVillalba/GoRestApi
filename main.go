@@ -6,6 +6,7 @@ import (
 	"net/http"
 	
 	"FirstProject/model/database"
+	"FirstProject/model/socket"
 	"FirstProject/auth"
 
 	usersController "FirstProject/Domains/user/controller"
@@ -23,6 +24,7 @@ import (
 var (
 	db				database.Db
 	gAuthToken		auth.GAuthToken
+	WebSocket		socket.WebSocket
 )
 
 func main(){
@@ -44,7 +46,6 @@ func StartApi(){
 
 	// INTERFACES
 	usersController := usersController.NewUsersController(usersUsecase, timersUsecase)
-
 
 	// USERS HANDLERS
 	getMe := gAuthToken.Middleware(http.HandlerFunc(usersController.GetUserByJwt), db.Session, "GetMe")
@@ -68,6 +69,11 @@ func StartApi(){
 	startTimer := gAuthToken.Middleware(http.HandlerFunc(usersController.StartTimer), db.Session, "StartTimer")
 	finishTimer := gAuthToken.Middleware(http.HandlerFunc(usersController.FinishTimer), db.Session, "FinishTimer")
 
+	// WEBSOCKET HANDLERS
+	r.Handle("/", http.FileServer(http.Dir("./front")))
+	createWebsocket := http.HandlerFunc(usersController.StartWebSocket)
+	finishWebsocket := http.HandlerFunc(usersController.FinishWebSocket)
+	
 	// USERS ROUTES
 	r.Handle("/user", getMe).Methods("GET")
 	r.Handle("/users", getUsers).Methods("GET")
@@ -91,15 +97,20 @@ func StartApi(){
 	r.Handle("/timers/start", startTimer).Methods("POST")
 	r.Handle("/timers/finish", finishTimer).Methods("POST")
 
-	StartServerAndAllowConections(r)
+	// WEBSOCKET ROUTES
+	r.HandleFunc("/ws", createWebsocket)
+	r.HandleFunc("/wsclose", finishWebsocket)
 
+	StartServerAndAllowConections(r)
 }
 
 func StartServerAndAllowConections(r *mux.Router){
 
 	corsObj := handlers.AllowedOrigins([]string{"*"})
+	allowedHeaders := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
+	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"})
 
-	if err := http.ListenAndServe(":3003", handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "PATCH"}), corsObj)(r)); err != nil {
+	if err := http.ListenAndServe(":3003", handlers.CORS( allowedHeaders, allowedMethods, corsObj )(r)); err != nil {
 		log.Fatal(err)
 	} else {
 		fmt.Println("Listening on port 3003....")

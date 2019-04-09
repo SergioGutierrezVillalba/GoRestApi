@@ -1,4 +1,4 @@
-package model
+package mail
 
 import (
 	"log"
@@ -8,11 +8,10 @@ import (
 	"fmt"
 	"net/smtp"
 	"html/template"
-	// "time"
+	
 	times "FirstProject/model/times"
-	// durafmt "github.com/hako/durafmt"
+	model "FirstProject/model"
 	gomail "gopkg.in/gomail.v2"
-	// "text/template"
 )
 
 type MailSender struct {}
@@ -32,7 +31,7 @@ func (m *MailSender)SendRecover(email string, token string) error {
 	from := "sendermail495@gmail.com"
 	pass := "mail888mail"
 	to := email
-	urlToRecover := "http://localhost:4002/recover/" + token
+	urlToRecover := "http://localhost:4200/recover/" + token
 
 	msg:= "From: "+ from + "\n" +
 		  "To: "+ to + "\n" +
@@ -53,10 +52,10 @@ func (m *MailSender)SendRecover(email string, token string) error {
 	
 }
 
-func (ms *MailSender)SendFinishedTime(email string, timer TimerFormatted) error {
+func (ms *MailSender)SendFinishedTime(email string, timer model.TimerFormatted) error {
 
 	projectPath := os.Getenv("GO_PROJECT_CONF_ROUTE")
-	relativePath := "templates/"
+	relativePath := "Templates/"
 	templatesPath := projectPath + relativePath
 	fmt.Println("Ruta: " + templatesPath)
 
@@ -76,25 +75,6 @@ func (ms *MailSender)SendFinishedTime(email string, timer TimerFormatted) error 
 	fmt.Println(timer.Duration)
 
 	duration := timePresenter.SecondsToHuman(int(timer.Duration))
-
-	// durationTime := time.Unix(0, timer.Duration)
-	// fmt.Println("DurationTime(Time):")
-	// fmt.Println(durationTime)
-
-	// durationTimeSince := time.Since(durationTime)
-	// fmt.Println("DurationTimeSince(Time):")
-	// fmt.Println(durationTimeSince)
-	
-	// duration := durationTimeSince.String()
-
-	// durationfmt, err2 := durafmt.ParseString(duration)
-	// durationPretty := durationfmt.String()
-	//---------------------------------
-
-	// if err2 != nil {
-	// 	fmt.Println("Error prettyformatting")
-	// }
-	//
 
 	fmt.Println("StartDate : " + startDate + "|" + "StartTime: " + startTime)
 	fmt.Println("FinishDate : " + finishDate + "|" + "FinishTime: " + finishTime)

@@ -3,19 +3,21 @@ package controller
 import (
 	usersUsecase "FirstProject/Domains/user/usecase"
 	timersUsecase "FirstProject/Domains/timer/usecase"
+
 	"FirstProject/model/auth"
-	"FirstProject/model"
 	"FirstProject/model/helper"
+	"FirstProject/model/socket"
+	"FirstProject/model/mail"
+	"FirstProject/model"
 
 	"net/http"
 	"time"
-	"strconv"
 	"fmt"
 	"encoding/json"
 
 	"gopkg.in/mgo.v2/bson"
-
 	"github.com/gorilla/mux"
+	"github.com/segmentio/ksuid"
 )
 
 type Controller interface{
@@ -30,6 +32,9 @@ type Controller interface{
 	Register(w http.ResponseWriter, r *http.Request)
 	SendRecover(w http.ResponseWriter, r *http.Request)
 	ResetPassword(w http.ResponseWriter, r *http.Request)
+	
+	StartWebSocket(w http.ResponseWriter, r *http.Request)
+	FinishWebSocket(w http.ResponseWriter, r *http.Request)
 
 	GetAllTimers(w http.ResponseWriter, r *http.Request)
 	GetTimerById(w http.ResponseWriter, r *http.Request)
@@ -47,8 +52,11 @@ type UsersController struct {
 }
 
 var (
+	socketsMaps		= make(map[string]map[string]*socket.WebSocket)
+
 	respond 		model.Responser
-	mailSender		model.MailSender
+	
+	mailSender		mail.MailSender
 
 	Helper			helper.Helper
 
@@ -65,6 +73,50 @@ func NewUsersController(u usersUsecase.Usecase, t timersUsecase.Usecase) Control
 		UsersUsecase: u,
 		TimersUsecase: t,
 	}
+}
+
+// SOCKETS CONTEXT
+
+func(u *UsersController) StartWebSocket(w http.ResponseWriter, r *http.Request) {
+
+	ws, err := socket.NewWebSocket(w, r)
+	var tokenReceived string
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ws.On("message", func(e *socket.Event) {
+		tokenReceived = e.Data.(string)
+		uncryptedJWT := authenticator.Decrypt(authenticator.DecodeBase64(tokenReceived))
+		userFromJWT := authenticator.GetUserInfoFromJWT(uncryptedJWT)
+		fmt.Println("(StartWebSocket): GroupId - " + userFromJWT.GroupId)
+
+		idMap := ksuid.New().String()
+		groupAndSocket := make(map[string]*socket.WebSocket)
+		groupAndSocket[userFromJWT.GroupId] = ws
+		socketsMaps[idMap] = groupAndSocket
+
+		// log.Printf("[MESSAGE] %v", e.Data)
+		ws.Out <- (&socket.Event{
+			Name: "response",
+			Data: "Socket created |" + idMap,
+		}).Raw()
+	})
+}
+
+func (u *UsersController) FinishWebSocket(w http.ResponseWriter, r *http.Request){
+
+	var socket socket.SocketResponser
+	GetDataFromBodyRequest(r, &socket)
+	// Get that websocket and close conn
+	socketsMaps[socket.SocketId][socket.GroupId].Conn.Close()
+	// Delete that websocketMap from generalMap
+	delete(socketsMaps, socket.SocketId)
+
+	// Will work with ws.on("close", {close conn and delete from websocketMap})?
+	// Must be that code put in StartWebSocket method with 'on' event?
 }
 
 // USERS CONTEXT
@@ -140,7 +192,7 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 	fmt.Println("(UpdateUser): Id user wants upda: " + userToUpdate.Id.Hex())
 
 	// WHICH ROLE IS USING
-	roleUsed := WhichRoleIsUsed(userRequesting, userToUpdate)
+	roleUsed := Helper.WhichRoleIsUsed(userRequesting, userToUpdate)
 	switch roleUsed {
 		case "NOAUTH":
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
@@ -215,9 +267,6 @@ func (u *UsersController) Login(w http.ResponseWriter, r *http.Request){
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	fmt.Println("This is the token that im sending")
-	fmt.Println(token)
 	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:token})
 }
 
@@ -254,6 +303,13 @@ func (u *UsersController) SendRecover(w http.ResponseWriter, r *http.Request){
 	token, err2 := crypter.Crypt(userDb.Email)
 
 	if err2 != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userDb.Token = token
+
+	if err = u.UsersUsecase.Update(userDb); err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -298,7 +354,7 @@ func (u *UsersController) ResetPassword(w http.ResponseWriter, r *http.Request){
 
 // TIMERS CONTEXT
 
-func (u *UsersController)GetAllTimers(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) GetAllTimers(w http.ResponseWriter, r *http.Request){
 	
 	timers, err := u.TimersUsecase.GetAll()
 
@@ -307,17 +363,11 @@ func (u *UsersController)GetAllTimers(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	timersFormatted, err := formatTimersForResponse(timers)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
+	timersFormatted := Helper.FormatTimersForResponse(timers)
 	respond.WithJson(w, http.StatusOK, timersFormatted)
 }
 
-func (u *UsersController)GetTimerById(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) GetTimerById(w http.ResponseWriter, r *http.Request){
 
 	timerId := GetIdFromUrl(r)
 	timer, err := u.TimersUsecase.GetById(timerId)
@@ -327,17 +377,11 @@ func (u *UsersController)GetTimerById(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	timerFormatted, err := formatTimerForResponse(timer)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
+	timerFormatted := Helper.FormatTimerForResponse(timer)
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
-func (u *UsersController)GetTimersByUserId(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) GetTimersByUserId(w http.ResponseWriter, r *http.Request){
 
 	userId := GetIdFromUrl(r)
 	fmt.Println("Controller, userId: " + userId)
@@ -348,18 +392,11 @@ func (u *UsersController)GetTimersByUserId(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	timersFormatted, err := formatTimersForResponse(timers)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
+	timersFormatted := Helper.FormatTimersForResponse(timers)
 	respond.WithJson(w, http.StatusOK, timersFormatted)
-	
 }
 
-func (u *UsersController)CreateTimer(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) CreateTimer(w http.ResponseWriter, r *http.Request){
 
 	var timer model.Timer
 	timer.Id = bson.NewObjectId()
@@ -373,17 +410,11 @@ func (u *UsersController)CreateTimer(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	timerFormatted, err := formatTimerForResponse(timer)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
+	timerFormatted := Helper.FormatTimerForResponse(timer)
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
-func (u *UsersController)UpdateTimer(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) UpdateTimer(w http.ResponseWriter, r *http.Request){
 
 	var timer model.Timer
 	GetDataFromBodyRequest(r, &timer)
@@ -395,17 +426,11 @@ func (u *UsersController)UpdateTimer(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	timerFormatted, err := formatTimerForResponse(timer)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
+	timerFormatted := Helper.FormatTimerForResponse(timer)
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
-func (u *UsersController)DeleteTimer(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) DeleteTimer(w http.ResponseWriter, r *http.Request){
 
 	timerId := GetIdFromUrl(r)
 	err := u.TimersUsecase.Delete(timerId)
@@ -418,7 +443,7 @@ func (u *UsersController)DeleteTimer(w http.ResponseWriter, r *http.Request){
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
-func (u *UsersController)StartTimer(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) StartTimer(w http.ResponseWriter, r *http.Request){
 
 	var user model.User
 	var timer model.Timer
@@ -434,7 +459,7 @@ func (u *UsersController)StartTimer(w http.ResponseWriter, r *http.Request){
 	fmt.Println("(StartTimer): Id user wants to start timer: " + user.Id.Hex())
 
 	// CHECK ROLE USED
-	roleUsed := WhichRoleIsUsed(userRequesting, model.User{Id: bson.ObjectId(timer.UserId)})
+	roleUsed := Helper.WhichRoleIsUsed(userRequesting, model.User{Id: user.Id})
 	switch roleUsed {
 		case "NOAUTH":
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
@@ -456,25 +481,25 @@ func (u *UsersController)StartTimer(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	timerFormatted, _ := formatTimerForResponse(timer)
+	timerFormatted := Helper.FormatTimerForResponse(timer)
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
-func (u *UsersController)FinishTimer(w http.ResponseWriter, r *http.Request){
+func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 
 	var timer model.Timer
-	// GET DATA 
 	GetDataFromBodyRequest(r, &timer)
 	GetDataFromHeaderRequest(r)
 	
 	timerDb, err := u.TimersUsecase.GetById(timer.Id.Hex())
+
 	// TIMER NOT EXIST
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	// TIMER IS ALREADY FINISHED
-	if timerDb.Finish > 0 {
+
+	if Helper.IsAlreadyFinished(timerDb.Finish) {
 		respond.WithError(w, http.StatusBadRequest, "TimerAlreadyFinished")
 		return
 	}
@@ -484,8 +509,7 @@ func (u *UsersController)FinishTimer(w http.ResponseWriter, r *http.Request){
 	fmt.Println("(FinishTimer): Id user requesting: " + userIdRequesting)
 	fmt.Println("(FinishTimer): Id user wants stop: " + timerDb.UserId)
 
-	// IS ADMIN, SELF, NONE
-	roleUsed := WhichRoleIsUsed(userRequesting, model.User{Id: bson.ObjectId(timer.UserId)})
+	roleUsed := Helper.WhichRoleIsUsed(userRequesting, model.User{Id: bson.ObjectIdHex(timerDb.UserId)})
 	switch roleUsed {
 		case "NOAUTH":
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
@@ -502,23 +526,26 @@ func (u *UsersController)FinishTimer(w http.ResponseWriter, r *http.Request){
 	timerDb.Finish = finishTime
 	timerDb.Duration = duration
 
-	err = u.TimersUsecase.Update(timerDb)
-
-	if err != nil {
+	if err = u.TimersUsecase.Update(timerDb); err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	timerFormatted, err2 := formatTimerForResponse(timerDb)
+	userOwnerOfTimer, _ := u.UsersUsecase.GetById(timerDb.UserId)
 
-	if err2 != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
+	if userOwnerOfTimer.HasGroup(){
+		for _, socketMap := range socketsMaps {
+			for groupId, websocket := range socketMap{
+				if userOwnerOfTimer.IsFromTheSameGroup(groupId) {
+					message := userOwnerOfTimer.Username + " finished a timer now."
+					websocket.SendMessage("response", message)
+				}
+			}
+		}
 	}
 
-	userDb, _ := u.UsersUsecase.GetById(timerDb.UserId)
-
-	err = mailSender.SendFinishedTime(userDb.Email, timerFormatted)
+	timerFormatted := Helper.FormatTimerForResponse(timerDb)
+	err = mailSender.SendFinishedTime(userOwnerOfTimer.Email, timerFormatted)
 
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
@@ -528,83 +555,21 @@ func (u *UsersController)FinishTimer(w http.ResponseWriter, r *http.Request){
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
-
-// Func
-func formatTimerForResponse(timer model.Timer) (timerFormatted model.TimerFormatted, err error){
-
-	timerFormatted.Id = timer.Id
-	timerFormatted.UserId = timer.UserId
-	timerFormatted.Duration = timer.Duration
-	timerFormatted.Start, err = unixDateToString(timer.Start)
-
-	if err != nil {
-		return
-	}
-
-	timerFormatted.Finish, err = unixDateToString(timer.Finish)
-
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-func formatTimersForResponse(timers [] model.Timer) (timersFormatted [] model.TimerFormatted, err error){
-
-	for i := 0; i < len(timers); i++ {
-		timerFormatted, errFormat := formatTimerForResponse(timers[i])
-
-		if errFormat != nil {
-			err = errFormat
-			return
-		}
-		
-		timersFormatted = append(timersFormatted, timerFormatted)
-	}
-	return
-}
-
-func unixDateToString(miliseconds int64) (string, error) {
-
-	miliToString := strconv.FormatInt(miliseconds, 10) // int64 to String
-	i, err := strconv.ParseInt(miliToString, 10, 64) // String to int
-
-    if err != nil {
-        return "", err
-	}
-	tm := time.Unix(i, 0) // int to Unix timestamp
-	tmToString := tm.String()
-
-	return tmToString, nil
-}
-
+// Methods to improving readability only...
 func GetIdFromUrl(request *http.Request) (id string) {
 	vars := mux.Vars(request)
 	id = vars["id"]
 	return
-}
+} // Must be abstracted?
 
 func GetDataFromBodyRequest(r *http.Request, dataSaver interface{}){
 	json.NewDecoder(r.Body).Decode(dataSaver)
 }
-
 func GetDataFromHeaderRequest(r *http.Request){
 	jwtSent = Helper.GetJWTFromHeader(r)
 }
 
-// We have to determine what user is Requesting and
-// which is susceptible to change to know which Role
-// has the user Requesting and in consequence what it
-// is allowed to do
-
-func WhichRoleIsUsed (userRequesting model.User, userToModify model.User) (situation string) {
-	if Helper.IsUser(userRequesting) {
-		if !Helper.IsUpdatingItself(userRequesting.Id.Hex(), userToModify.Id.Hex()){
-			fmt.Println("(SelfRoleRequest): You arent allowed to do that")
-			return "NOAUTH"
-		}
-		return "SELF"
-	}
-	return "ADMIN"
-}
+// From 623 lines to 507 (04/04/19)
+// From 507 lines to 537 (05/04/19)
+// From 537 lines to 579 (08/04/19)
+// From 579 lines to 568 (09/04/19)

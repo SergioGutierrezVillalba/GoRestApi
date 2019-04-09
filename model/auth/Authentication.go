@@ -5,7 +5,7 @@ import (
 
 	"io/ioutil"
 	"log"
-	"fmt"
+	// "fmt"
 	"time"
 
 	"FirstProject/model"
@@ -79,11 +79,8 @@ func (a *Authentication) GetClaimsFromJwt(rawJWT string) (djwt.Claims, error) {
 
 func (a *Authentication) GetUserIdFromJWT(rawJWT string) (string, error) {
 	jwt := a.Decrypt(a.DecodeBase64(rawJWT))
-	fmt.Println(rawJWT)
 	claims, err := a.GetClaimsFromJwt(jwt)
 	claimsCustomized := claims.(*MyCustomClaims)
-
-	fmt.Println("ey: " + claimsCustomized.User.RawId)
 	return claimsCustomized.User.RawId, err
 }
 
@@ -91,6 +88,12 @@ func (a *Authentication) GetExpirationTimeOfJWT(rawJWT string) (int64){
 	claims, _ := a.GetClaimsFromJwt(rawJWT)
 	claimsCustomized := claims.(*MyCustomClaims)
 	return claimsCustomized.StandardClaims.ExpiresAt
+}
+
+func (a *Authentication) GetUserInfoFromJWT(rawJWT string)(model.User){
+	claims, _ := a.GetClaimsFromJwt(rawJWT)
+	claimsCustomized := claims.(*MyCustomClaims)
+	return claimsCustomized.User
 }
 
 func (a *Authentication) IsNotValid(expiration int64) bool {

@@ -62,6 +62,8 @@ func (gAuthToken *GAuthToken) Middleware(h http.Handler, session *mgo.Session, m
 			return
 		}
 
+		r.Header.Add("User-Agent", userRequesting.Role)
+
 		if !HasPermissionForDoThatRequest(userRequesting.Role, methodRequested){
 			fmt.Println("(Middleware blocks): Not enough permissions")
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
