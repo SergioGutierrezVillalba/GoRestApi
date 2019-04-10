@@ -136,6 +136,10 @@ func (u *UsersUsecase) Update(user model.User) (err error) {
 	return
 }
 
+// func (u *UsersUsecase) UpdateUsername(user model.User) error {
+
+// }
+
 func (u *UsersUsecase) Delete(userId string) (err error) {
 	err = u.repo.Delete(userId)
 

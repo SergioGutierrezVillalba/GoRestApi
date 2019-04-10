@@ -27,6 +27,7 @@ type Controller interface{
 	GetUserByJwt(w http.ResponseWriter, r *http.Request)
 	CreateUser(w http.ResponseWriter, r *http.Request)
 	UpdateUser(w http.ResponseWriter, r *http.Request)
+	UpdateUserWithoutPassword(w http.ResponseWriter, r *http.Request)
 	DeleteUser(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	Register(w http.ResponseWriter, r *http.Request)
@@ -200,6 +201,9 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 		case "SELF":
 			userToUpdate.Role = "user"
 		case "ADMIN":
+			// 1. Coger usuario de la DB
+			// 2. Reasignar contraseña ya existente
+			// 3. Hacer todo lo demás
 			// make sth that you need if is an admin
 	}
 
@@ -217,6 +221,60 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:userToUpdate.Jwt})
+}
+
+func (u *UsersController) UpdateUserWithoutPassword(w http.ResponseWriter, r *http.Request){
+	
+	var userToUpdate model.User
+	GetDataFromBodyRequest(r, &userToUpdate)
+	GetDataFromHeaderRequest(r)
+
+	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent) 
+	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
+	fmt.Println("(UpdateUser): Id user requesting: " + userIdRequesting)
+	fmt.Println("(UpdateUser): Id user wants upda: " + userToUpdate.Id.Hex())
+
+	// get actual password
+	userDb, err := u.UsersUsecase.GetById(userToUpdate.Id.Hex())
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, "UserNotExists")
+	}
+
+	fmt.Println("(Controller):" + userRequesting.Role)
+	// WHICH ROLE IS USING
+	roleUsed := Helper.WhichRoleIsUsed(userRequesting, userDb)
+	switch roleUsed {
+		case "NOAUTH":
+			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
+			return
+		case "SELF":
+			userToUpdate.Role = "user"
+			
+		case "ADMIN":
+			// make sth that you need if is an admin
+	}
+
+	// assign actual password
+	userToUpdate.Password = userDb.Password
+
+	savePWD := userToUpdate.Password
+	userToUpdate.Password = ""
+
+	newJWT := authenticator.GenerateJWT(userToUpdate)
+	userToUpdate.Jwt = newJWT
+
+	// is already encrypted
+	userToUpdate.Password = savePWD
+
+	err = u.UsersUsecase.Update(userToUpdate)
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:userToUpdate.Jwt})
+	
 }
 
 func (u *UsersController) DeleteUser(w http.ResponseWriter, r *http.Request){
@@ -573,3 +631,4 @@ func GetDataFromHeaderRequest(r *http.Request){
 // From 507 lines to 537 (05/04/19)
 // From 537 lines to 579 (08/04/19)
 // From 579 lines to 568 (09/04/19)
+// From 568 lines to 631 (10/04/19)

@@ -91,6 +91,7 @@ func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) 
 		"GetMe":{"ADMIN", "SELF"},
 		"CreateUser":{"ADMIN"},
 		"UpdateUser":{"ADMIN", "SELF"},
+		"UpdateUserWithoutPassword":{"ADMIN", "SELF"},
 		"DeleteUser":{"ADMIN"},
 
 		"GetAllTimers":{"ADMIN"},
