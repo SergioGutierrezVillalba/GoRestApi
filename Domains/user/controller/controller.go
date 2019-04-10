@@ -199,22 +199,50 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		case "SELF":
-			userToUpdate.Role = "user"
+			u.UpdateSelf(userToUpdate, w, r)
 		case "ADMIN":
-			// 1. Coger usuario de la DB
-			// 2. Reasignar contraseña ya existente
-			// 3. Hacer todo lo demás
-			// make sth that you need if is an admin
+			u.UpdateAdmin(userToUpdate, w, r)
 	}
+}
 
-	savePWD := userToUpdate.Password
+func (u *UsersController) UpdateSelf(userToUpdate model.User, w http.ResponseWriter, r *http.Request) {
+	
+	userToUpdate.Role = "user"
+
+	newPassword := userToUpdate.Password
 	userToUpdate.Password = ""
 
 	newJWT := authenticator.GenerateJWT(userToUpdate)
 	userToUpdate.Jwt = newJWT
-	userToUpdate.Password, _ = crypter.Crypt(savePWD)
 
-	err := u.UsersUsecase.Update(userToUpdate)
+	userToUpdate.Password, _ = crypter.Crypt(newPassword)
+
+	err := u.UsersUsecase.UpdateSelf(userToUpdate)
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:userToUpdate.Jwt})
+}
+
+func (u *UsersController) UpdateAdmin(userToUpdate model.User, w http.ResponseWriter, r *http.Request){
+
+	userToUpdateInBD, err := u.UsersUsecase.GetById(userToUpdate.Id.Hex())
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, "UserNotExists")
+		return
+	}
+
+	userToUpdate.Password = ""
+	
+	newJWT := authenticator.GenerateJWT(userToUpdate)
+	userToUpdate.Jwt = newJWT
+
+	userToUpdate.Password = userToUpdateInBD.Password
+
+	err = u.UsersUsecase.UpdateAdmin(userToUpdate)
 
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
@@ -631,4 +659,4 @@ func GetDataFromHeaderRequest(r *http.Request){
 // From 507 lines to 537 (05/04/19)
 // From 537 lines to 579 (08/04/19)
 // From 579 lines to 568 (09/04/19)
-// From 568 lines to 631 (10/04/19)
+// From 568 lines to 657 (10/04/19)
