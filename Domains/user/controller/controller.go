@@ -186,13 +186,11 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 	GetDataFromBodyRequest(r, &userToUpdate)
 	GetDataFromHeaderRequest(r)
 
-	// SELF VERIFY
 	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent) 
 	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
 	fmt.Println("(UpdateUser): Id user requesting: " + userIdRequesting)
 	fmt.Println("(UpdateUser): Id user wants upda: " + userToUpdate.Id.Hex())
 
-	// WHICH ROLE IS USING
 	roleUsed := Helper.WhichRoleIsUsed(userRequesting, userToUpdate)
 	switch roleUsed {
 		case "NOAUTH":
