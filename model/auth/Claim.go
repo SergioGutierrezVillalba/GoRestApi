@@ -4,7 +4,7 @@ import (
 	
 	jwt "github.com/dgrijalva/jwt-go"
 
-	"FirstProject/model"
+	"FirstProject/Model"
 )
 
 type Claim struct {

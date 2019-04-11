@@ -52,11 +52,15 @@ func (a *Api) Start(session *mgo.Session){
 	updateUser := gAuthToken.Middleware(http.HandlerFunc(usersController.UpdateUser), session, "UpdateUser")
 	updateUserWithoutPassword := gAuthToken.Middleware(http.HandlerFunc(usersController.UpdateUserWithoutPassword), session, "UpdateUserWithoutPassword")
 	deleteUser := gAuthToken.Middleware(http.HandlerFunc(usersController.DeleteUser), session, "DeleteUser")
-	// setProfileImageToUser := gAuthToken.Middleware(http.HandlerFunc(usersController.SetProfileImage), session, "SetProfileImage")
 	register := http.HandlerFunc(usersController.Register)
 	login := http.HandlerFunc(usersController.Login)
 	sendRecover := http.HandlerFunc(usersController.SendRecover)
 	resetPassword := http.HandlerFunc(usersController.ResetPassword)
+
+	
+	// PROFILE IMAGES HANDLERS
+	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
+	setProfileImageToUser := gAuthToken.Middleware(http.HandlerFunc(usersController.SetProfileImage), session, "SetProfileImage")
 
 
 	// TIMERS HANDLERS
@@ -88,8 +92,8 @@ func (a *Api) Start(session *mgo.Session){
 	r.Handle("/users/register", register).Methods("POST")
 	r.Handle("/users/sendrecover", sendRecover).Methods("POST")
 	r.Handle("/users/reset", resetPassword).Methods("PATCH")
-	
-	// r.Handle("/")
+	r.Handle("/users/profileimg", setProfileImageToUser).Methods("PUT")
+	r.Handle("/users/profileimg/{id}", getProfileImage).Methods("GET")
 
 
 	// TIMERS ROUTES

@@ -4,7 +4,7 @@ import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
-	"FirstProject/model"
+	"FirstProject/Model"
 )
 
 type MongoDbRepository struct{

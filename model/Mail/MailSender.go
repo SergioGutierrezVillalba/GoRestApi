@@ -9,8 +9,8 @@ import (
 	"net/smtp"
 	"html/template"
 	
-	times "FirstProject/model/times"
-	model "FirstProject/model"
+	times "FirstProject/Model/times"
+	model "FirstProject/Model"
 	gomail "gopkg.in/gomail.v2"
 )
 

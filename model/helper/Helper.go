@@ -6,8 +6,8 @@ import (
 	"time"
 	"fmt"
 
-	"FirstProject/model/auth"
-	"FirstProject/model"	
+	"FirstProject/Model/auth"
+	"FirstProject/Model"	
 )
 
 var(

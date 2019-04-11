@@ -7,9 +7,9 @@ import (
 
 	mgo "gopkg.in/mgo.v2"
 
-	"FirstProject/model"
-	"FirstProject/model/helper"
-	"FirstProject/model/auth"
+	"FirstProject/Model"
+	"FirstProject/Model/helper"
+	"FirstProject/Model/auth"
 	"FirstProject/Domains/user/usecase"
 	repo "FirstProject/Domains/user/entity"
 
@@ -85,6 +85,7 @@ func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) 
 		roleVerified = "self"
 	}
 
+
 	Permissions	:= map[string][]string{
 		"GetAllUsers":{"ADMIN"},
 		"GetUserById":{"ADMIN"},
@@ -93,6 +94,8 @@ func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) 
 		"UpdateUser":{"ADMIN", "SELF"},
 		"UpdateUserWithoutPassword":{"ADMIN", "SELF"},
 		"DeleteUser":{"ADMIN"},
+		"SetProfileImage":{"ADMIN", "SELF"},
+		"GetProfileImage":{"ADMIN", "SELF"},
 
 		"GetAllTimers":{"ADMIN"},
 		"GetTimerById":{"ADMIN"},

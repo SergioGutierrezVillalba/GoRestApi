@@ -8,7 +8,7 @@ import (
 	// "fmt"
 	"time"
 
-	"FirstProject/model"
+	"FirstProject/Model"
 
 	djwt "github.com/dgrijalva/jwt-go"
 	alyu "github.com/alyu/encrypt"
