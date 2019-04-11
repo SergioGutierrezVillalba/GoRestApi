@@ -445,33 +445,21 @@ func (u *UsersController) ResetPassword(w http.ResponseWriter, r *http.Request){
 
 func (u *UsersController) SetProfileImage(w http.ResponseWriter, r *http.Request){
 
-	// 1. Get id from Multipart form
 	userId := r.FormValue("id")
-	fmt.Println(userId)
-	multiPartFile, multiPartHeader, err := r.FormFile("img")
+	multiPartFile, _, err := r.FormFile("img")
 
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = u.UsersUsecase.SetProfileImage(userId, multiPartHeader)
+	err = u.UsersUsecase.SetProfileImage(userId, multiPartFile)
 
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	// 2. Get bytes of img from Multipart form
 
-	// var user model.User
-	// GetDataFromBodyRequest(r, &user)
-
-	// err := u.UsersUsecase.SetProfileImage(user)
-
-	// if err != nil {
-	// 	respond.WithError(w, http.StatusBadRequest, err.Error())
-	// 	return
-	// }
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
@@ -485,7 +473,7 @@ func (u *UsersController) GetProfileImage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	respond.WithJson(w, http.StatusBadRequest, imgs.ProfileImage{
+	respond.WithJson(w, http.StatusOK, imgs.ProfileImage{
 		ImageBytes: imageBytes,
 	})
 }

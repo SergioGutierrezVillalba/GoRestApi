@@ -8,7 +8,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	// "io"
+	"io"
 
 	// "encoding/base64"
 	// "strings"
@@ -33,7 +33,7 @@ type Usecase interface{
 	UpdateAdmin(model.User) error
 	Delete(string) error
 	Register(model.User) error
-	SetProfileImage(string, *multipart.FileHeader) error
+	SetProfileImage(string, multipart.File) error
 }
 
 var (
@@ -100,7 +100,6 @@ func (u *UsersUsecase) GetProfileImage(userId string) (imageBytes []byte, err er
 		return
 	}
 	
-	// Cast file to image
 	fileWithImgData, err2 := os.Open(user.RouteImg)
 	defer fileWithImgData.Close()
 
@@ -109,9 +108,10 @@ func (u *UsersUsecase) GetProfileImage(userId string) (imageBytes []byte, err er
 		return
 	}
 
-	myImage, format, err2 := image.Decode(fileWithImgData)
-	if err2 != nil {
-		err = err2
+	myImage, format, err3 := image.Decode(fileWithImgData)
+
+	if err3 != nil {
+		err = err3
 		return
 	}
 
@@ -260,26 +260,29 @@ func (u *UsersUsecase) Register(user model.User) (err error){
 	return
 }
 
-func (u *UsersUsecase) SetProfileImage(userId string, fileHeader *multipart.FileHeader) (error){
-	
-	file, _ := fileHeader.Open()
+func (u *UsersUsecase) SetProfileImage(userId string, file multipart.File) (error){
+
+	buf := bytes.NewBuffer(nil)
+
 	defer file.Close()
 
-	buffer := make([]byte, fileHeader.Size)
-	// io.Reader()
-	myImage, format, err := image.Decode(/*io.Reader*/)
-
-	if err != nil {
-		fmt.Println("Error decoding")
+	if _, err := io.Copy(buf, file); err != nil {
 		return err
+	}
+	
+	myImage, format, err2 := image.Decode(bytes.NewReader(buf.Bytes()))
+
+	if err2 != nil {
+		fmt.Println("Error decoding")
+		return err2
 	}
 
 	imgRoute := "./image/" + userId + "." + format
-	outputFile, err := os.Create(imgRoute)
+	outputFile, err3 := os.Create(imgRoute)
 	defer outputFile.Close()
 
-	if err != nil {
-		return err
+	if err3 != nil {
+		return err3
 	}
 	
 	switch format {

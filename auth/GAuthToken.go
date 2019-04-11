@@ -85,6 +85,7 @@ func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) 
 		roleVerified = "self"
 	}
 
+
 	Permissions	:= map[string][]string{
 		"GetAllUsers":{"ADMIN"},
 		"GetUserById":{"ADMIN"},
@@ -93,8 +94,8 @@ func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) 
 		"UpdateUser":{"ADMIN", "SELF"},
 		"UpdateUserWithoutPassword":{"ADMIN", "SELF"},
 		"DeleteUser":{"ADMIN"},
-		"SetProfileImage":{"SELF"},
-		"GetProfileImage":{"SELF"},
+		"SetProfileImage":{"ADMIN", "SELF"},
+		"GetProfileImage":{"ADMIN", "SELF"},
 
 		"GetAllTimers":{"ADMIN"},
 		"GetTimerById":{"ADMIN"},
