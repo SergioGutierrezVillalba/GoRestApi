@@ -2,8 +2,8 @@ package usecase
 
 import (
 	repo "FirstProject/Domains/timer/entity"
-	"FirstProject/model"
-	"FirstProject/model/validation"
+	"FirstProject/Model"
+	"FirstProject/Model/validation"
 
 	"errors"
 )

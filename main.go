@@ -1,8 +1,8 @@
 package main
 
 import (
-	"FirstProject/model/database"
-	"FirstProject/model/api"
+	"FirstProject/Model/database"
+	"FirstProject/Model/api"
 )
 
 var (

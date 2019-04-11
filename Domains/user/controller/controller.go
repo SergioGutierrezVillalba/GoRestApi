@@ -4,15 +4,18 @@ import (
 	usersUsecase "FirstProject/Domains/user/usecase"
 	timersUsecase "FirstProject/Domains/timer/usecase"
 
-	"FirstProject/model/auth"
-	"FirstProject/model/helper"
-	"FirstProject/model/socket"
-	"FirstProject/model/mail"
-	"FirstProject/model"
+	"FirstProject/Model/auth"
+	"FirstProject/Model/helper"
+	"FirstProject/Model/socket"
+	"FirstProject/Model/mail"
+	"FirstProject/Model/imgs"
+	"FirstProject/Model"
 
 	"net/http"
 	"time"
 	"fmt"
+	// "io/ioutil"
+	// "mime/multipart"
 	"encoding/json"
 
 	"gopkg.in/mgo.v2/bson"
@@ -33,6 +36,8 @@ type Controller interface{
 	Register(w http.ResponseWriter, r *http.Request)
 	SendRecover(w http.ResponseWriter, r *http.Request)
 	ResetPassword(w http.ResponseWriter, r *http.Request)
+	SetProfileImage(w http.ResponseWriter, r *http.Request)
+	GetProfileImage(w http.ResponseWriter, r *http.Request)
 	
 	StartWebSocket(w http.ResponseWriter, r *http.Request)
 	FinishWebSocket(w http.ResponseWriter, r *http.Request)
@@ -250,6 +255,8 @@ func (u *UsersController) UpdateAdmin(userToUpdate model.User, w http.ResponseWr
 }
 
 func (u *UsersController) UpdateUserWithoutPassword(w http.ResponseWriter, r *http.Request){
+
+	// REFACTOR
 	
 	var userToUpdate model.User
 	GetDataFromBodyRequest(r, &userToUpdate)
@@ -436,6 +443,53 @@ func (u *UsersController) ResetPassword(w http.ResponseWriter, r *http.Request){
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
+func (u *UsersController) SetProfileImage(w http.ResponseWriter, r *http.Request){
+
+	// 1. Get id from Multipart form
+	userId := r.FormValue("id")
+	fmt.Println(userId)
+	multiPartFile, multiPartHeader, err := r.FormFile("img")
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = u.UsersUsecase.SetProfileImage(userId, multiPartHeader)
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	// 2. Get bytes of img from Multipart form
+
+	// var user model.User
+	// GetDataFromBodyRequest(r, &user)
+
+	// err := u.UsersUsecase.SetProfileImage(user)
+
+	// if err != nil {
+	// 	respond.WithError(w, http.StatusBadRequest, err.Error())
+	// 	return
+	// }
+	respond.WithJson(w, http.StatusOK, "Success")
+}
+
+func (u *UsersController) GetProfileImage(w http.ResponseWriter, r *http.Request){
+	
+	userId := GetIdFromUrl(r)
+	imageBytes, err := u.UsersUsecase.GetProfileImage(userId)
+
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	respond.WithJson(w, http.StatusBadRequest, imgs.ProfileImage{
+		ImageBytes: imageBytes,
+	})
+}
+
 // TIMERS CONTEXT
 
 func (u *UsersController) GetAllTimers(w http.ResponseWriter, r *http.Request){
@@ -571,6 +625,8 @@ func (u *UsersController) StartTimer(w http.ResponseWriter, r *http.Request){
 
 func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 
+	// FORMAT
+
 	var timer model.Timer
 	GetDataFromBodyRequest(r, &timer)
 	GetDataFromHeaderRequest(r)
@@ -599,9 +655,7 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		case "SELF":
-			// make sth that you need if is a self
 		case "ADMIN":
-			// make sth that you need if is an admin
 	}
 	
 	finishTime := time.Now().Unix()
@@ -652,9 +706,3 @@ func GetDataFromBodyRequest(r *http.Request, dataSaver interface{}){
 func GetDataFromHeaderRequest(r *http.Request){
 	jwtSent = Helper.GetJWTFromHeader(r)
 }
-
-// From 623 lines to 507 (04/04/19)
-// From 507 lines to 537 (05/04/19)
-// From 537 lines to 579 (08/04/19)
-// From 579 lines to 568 (09/04/19)
-// From 568 lines to 657 (10/04/19)

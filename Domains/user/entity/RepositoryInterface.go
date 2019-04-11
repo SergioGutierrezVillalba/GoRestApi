@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"FirstProject/model"
+	"FirstProject/Model"
 )
 
 type RepositoryInterface interface{
