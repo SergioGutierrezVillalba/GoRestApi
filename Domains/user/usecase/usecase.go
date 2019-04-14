@@ -270,60 +270,25 @@ func (u *UsersUsecase) SetProfileImage(userId string, file multipart.File) (erro
 		return err
 	}
 	
-	myImage, format, err2 := image.Decode(bytes.NewReader(buf.Bytes()))
+	// embeded in profile image struct
+	myImage, format, err := image.Decode(bytes.NewReader(buf.Bytes()))
 
+	if err != nil {
+		return err
+	}
+
+	// SaveImageInServerFolder
+	imgName := userId + "." + format
+	creationRoute, err2 := SaveImageInServerFolder(myImage, imgName, 80, format)
 	if err2 != nil {
-		fmt.Println("Error decoding")
 		return err2
 	}
 
-	imgRoute := "./image/" + userId + "." + format
-	outputFile, err3 := os.Create(imgRoute)
-	defer outputFile.Close()
-
-	if err3 != nil {
-		return err3
-	}
-	
-	switch format {
-		case "jpg":
-		case "jpeg":
-			quality := jpeg.Options{Quality:80}
-			jpeg.Encode(outputFile, myImage, &quality)
-		case "png":
-			png.Encode(outputFile, myImage)
-	}
-
-	fmt.Println("(UsersUsecase) Usecase says, this is the route: " + imgRoute)
-
-	userDb, _ := u.repo.GetById(userId)
-	userDb.RouteImg = imgRoute
-	userDb.ProfileImage = ""
-
-	if err := u.repo.Update(userDb); err != nil {
-		return err
-	}
-	return nil
-}
-
-// func (u *UsersUsecase) SetProfileImage(user model.User) (error){
-
-// 	// 1. Get bytes from Multipart
-
-// 	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(user.ProfileImage))
-// 	myImage, format, err := image.Decode(reader)
-
-	// if err != nil {
-	// 	fmt.Println("Error decoding")
-	// 	return err
-	// }
-
-	// imgRoute := "./image/" + user.Id.Hex() + "." + format
-	// outputFile, err := os.Create(imgRoute)
+	// outputFile, err2 := os.Create(imgRoute)
 	// defer outputFile.Close()
 
-	// if err != nil {
-	// 	return err
+	// if err2 != nil {
+	// 	return err2
 	// }
 	
 	// switch format {
@@ -335,14 +300,37 @@ func (u *UsersUsecase) SetProfileImage(userId string, file multipart.File) (erro
 	// 		png.Encode(outputFile, myImage)
 	// }
 
-	// fmt.Println("(UsersUsecase) Usecase says, this is the route: " + imgRoute)
+	userDb, _ := u.repo.GetById(userId)
+	userDb.SetRouteImg(creationRoute)
+	userDb.EmptyProfileImage()
 
-	// userDb, _ := u.repo.GetById(user.Id.Hex())
-	// userDb.RouteImg = imgRoute
-	// userDb.ProfileImage = ""
+	if err := u.repo.Update(userDb); err != nil {
+		return err
+	}
+	return nil
+}
 
-	// if err := u.repo.Update(userDb); err != nil {
-	// 	return err
-	// }
-	// return nil
-// }
+// Must evolve into ImageDirectory Struct
+func SaveImageInServerFolder(imageDecoded image.Image, imgName string, percentOfQuality int, format string)(string, error){
+
+	imageFolderRoute := "./image/"
+	creatingRoute := imageFolderRoute + imgName
+
+	outputFile, err := os.Create(creatingRoute)
+	defer outputFile.Close()
+
+	if err != nil {
+		return "", err
+	}
+
+	// other func??
+	switch format {
+	case "jpg":
+	case "jpeg":
+		quality := jpeg.Options{Quality:percentOfQuality}
+		jpeg.Encode(outputFile, imageDecoded, &quality)
+	case "png":
+		png.Encode(outputFile, imageDecoded)
+	}
+	return creatingRoute, nil
+}

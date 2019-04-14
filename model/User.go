@@ -31,3 +31,22 @@ func (u *User) IsFromTheSameGroup(groupId string) bool {
 	}
 	return false
 }
+
+
+// Setters
+func (u *User) SetRouteImg(routeImg string){
+	u.RouteImg = routeImg
+}
+
+// Emptiers
+func (u *User) EmptyPassword(){
+	u.Password = ""
+}
+
+func (u *User) EmptyJWT(){
+	u.Jwt = ""
+}
+
+func (u *User) EmptyProfileImage(){
+	u.ProfileImage = ""
+}

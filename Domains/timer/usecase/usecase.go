@@ -20,6 +20,7 @@ type Usecase interface{
 	Update(model.Timer)error
 	Delete(string)error
 	StartTimer(timer model.Timer)error
+	FinishTimer()
 }
 
 type TimerUsecase struct {
@@ -95,3 +96,5 @@ func (t *TimerUsecase) StartTimer(timer model.Timer)(err error){
 	err = t.repo.InsertStartTime(timer)
 	return
 }
+
+func (t *TimerUsecase) FinishTimer(){}

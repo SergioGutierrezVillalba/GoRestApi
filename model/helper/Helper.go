@@ -73,13 +73,6 @@ func (h *Helper) IsEmpty(data string) bool {
 	return false
 }
 
-func (h *Helper) IsAlreadyFinished(timerFinish int64) bool {
-	if timerFinish > 0 {
-		return true
-	}
-	return false
-}
-
 func (h *Helper) UnixDateToString(miliseconds int64) (dateStringed string) {
 	dateStringed = time.Unix(miliseconds, 0).String()
 	return
@@ -111,7 +104,7 @@ func (h *Helper) FormatTimersForResponse(timers [] model.Timer) (timersFormatted
 func (h *Helper) WhichRoleIsUsed (userRequesting model.User, userToModify model.User) (situation string) {
 	if h.IsUser(userRequesting) {
 		if !h.IsUpdatingItself(userRequesting.Id.Hex(), userToModify.Id.Hex()){
-			fmt.Println("(SelfRoleRequest): You arent allowed to do that")
+			fmt.Println("(WhichRoleIsUsed): You arent allowed to do that")
 			return "NOAUTH"
 		}
 		return "SELF"
