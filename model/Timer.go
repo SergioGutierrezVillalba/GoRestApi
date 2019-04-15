@@ -12,6 +12,10 @@ type Timer struct{
 	Duration    int64	      `bson:"duration" json:"duration"`
 }
 
+func (t *Timer) GetId() (id string){
+	return t.Id.Hex()
+}
+
 func (t *Timer) IsAlreadyFinished() bool {
 	if t.Finish > 0 {
 		return true

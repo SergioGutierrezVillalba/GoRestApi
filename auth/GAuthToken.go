@@ -34,38 +34,11 @@ func (gAuthToken *GAuthToken) Middleware(h http.Handler, session *mgo.Session, m
 		newSession := session.Copy()
 		defer newSession.Close()
 
-		SetConnectors(newSession)
+		StartRepositoriesAndUsecases(newSession /*repos slice*/)
+
 		jwt := Helper.GetJWTFromHeader(r)
 
-		if Helper.IsEmpty(jwt) {
-			fmt.Println("(Middleware blocks): Empty JWT")
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
-			return
-		}
-
-		uncryptedJWT := Auth.Decrypt(Auth.DecodeBase64(jwt))
-		expiration := Auth.GetExpirationTimeOfJWT(uncryptedJWT)
-
-		if Auth.IsNotValid(expiration){
-			fmt.Println("(Middleware says): Expirated time: " + string(expiration))
-			fmt.Println("(Middleware blocks): Expirated JWT")
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
-			return
-		}
-
-		userRequesting, err := usersUsecase.GetUserByJwt(jwt)
-		fmt.Println("Rol:" + userRequesting.Role)
-		
-		if err != nil {
-			fmt.Println("(Middleware blocks): JWT not exists")
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
-			return
-		}
-
-		r.Header.Add("User-Agent", userRequesting.Role)
-
-		if !HasPermissionForDoThatRequest(userRequesting.Role, methodRequested){
-			fmt.Println("(Middleware blocks): Not enough permissions")
+		if VerificationIsDenied(w, r, jwt, methodRequested) {
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		}
@@ -74,19 +47,63 @@ func (gAuthToken *GAuthToken) Middleware(h http.Handler, session *mgo.Session, m
 	})
 }
 
-func SetConnectors(session *mgo.Session){
+// usersRepo must be changed for a slice of repos
+func StartRepositoriesAndUsecases(session *mgo.Session/* repos slice */){
+	SetSessionToRepositories(session)
+	SetReposToUsecases(/* repos slice */)
+}
+func SetSessionToRepositories(session *mgo.Session){
 	usersRepo = repo.NewMongoDbRepository(session)
+}
+func SetReposToUsecases(/*repos*/){
+	// for --> iterate over repos slice and create a map with ["context"] = newUsecase
+	// but if i only have to use users usecase for verification?
 	usersUsecase = usecase.NewUsecase(usersRepo)
 }
+func VerificationIsDenied(w http.ResponseWriter, r *http.Request, jwt string, methodRequested string) bool {
 
+	if UserIsNotAllowed(jwt, methodRequested){
+		return true
+	}
+	if JWTIsNotValid(w, r, jwt) {
+		return true
+	}
+	return false 
+}
+func JWTIsNotValid(w http.ResponseWriter, r *http.Request, jwt string)bool{
+
+	uncryptedJWT := Auth.Decrypt(Auth.DecodeBase64(jwt))
+	expiration := Auth.GetExpirationTimeOfJWT(uncryptedJWT)
+
+	if Auth.IsExpirated(expiration){
+		fmt.Println("(Middleware blocks): Expirated JWT")
+		return true
+	}
+	return false
+}
+func UserIsNotAllowed(jwt string, methodRequested string) bool {
+
+	userRequesting, _ := usersUsecase.GetUserByJwt(jwt)
+	fmt.Println("Rol:" + userRequesting.Role)
+		
+	if userRequesting.NotExists() {
+		fmt.Println("(Middleware blocks): User not exists")
+		return true
+	}
+
+	if !HasPermissionForDoThatRequest(userRequesting.Role, methodRequested){ // Doesnt has permissions
+		fmt.Println("(Middleware blocks): Not enough permissions")
+		return true
+	}
+	return false
+}
 func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) bool {
 
-	if roleVerified == "user" {
+	if roleVerified == "user" { // must be changed
 		roleVerified = "self"
 	}
 
-
-	Permissions	:= map[string][]string{
+	Permissions	:= map[string][]string{ // to an external file
 		"GetAllUsers":{"ADMIN"},
 		"GetUserById":{"ADMIN"},
 		"GetMe":{"ADMIN", "SELF"},
@@ -99,7 +116,7 @@ func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) 
 
 		"GetAllTimers":{"ADMIN"},
 		"GetTimerById":{"ADMIN"},
-		"GetTimersByUserId":{"ADMIN", "SELF"}, // needs more verification in self
+		"GetTimersByUserId":{"ADMIN", "SELF"},
 		"CreateTimer":{"ADMIN"},
 		"UpdateTimer":{"ADMIN"},
 		"DeleteTimer":{"ADMIN"},

@@ -18,13 +18,29 @@ type User struct{
 	RouteImg		string		  `bson:"routeimg"	   json:"routeimg"`
 }
 
+// Getters
+func (u *User) GetId() (id string){
+	id = u.Id.Hex()
+	return
+}
+
+// Miscelanea
+
+// Checks if username is empty 
+// so the user arrived null
+// so user not exists
+func (u *User) NotExists() bool {
+	if u.Username == "" {
+		return true
+	}
+	return false
+}
 func (u *User) HasGroup() bool {
 	if u.GroupId == "" {
 		return false
 	}
 	return true
 }
-
 func (u *User) IsFromTheSameGroup(groupId string) bool {
 	if u.GroupId == groupId {
 		return true
@@ -32,21 +48,27 @@ func (u *User) IsFromTheSameGroup(groupId string) bool {
 	return false
 }
 
-
 // Setters
 func (u *User) SetRouteImg(routeImg string){
 	u.RouteImg = routeImg
 }
+func (u *User) SetJWT(jwt string){
+	u.Jwt = jwt
+}
+func (u *User) SetPassword(newPassword string){
+	u.Password = newPassword
+}
+func (u *User) SetRole(role string){
+	u.Role = role
+}
 
-// Emptiers
+// Cleaners
 func (u *User) EmptyPassword(){
 	u.Password = ""
 }
-
 func (u *User) EmptyJWT(){
 	u.Jwt = ""
 }
-
 func (u *User) EmptyProfileImage(){
 	u.ProfileImage = ""
 }

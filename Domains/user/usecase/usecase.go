@@ -4,6 +4,7 @@ import (
 	repo "FirstProject/Domains/user/entity"
 	"FirstProject/Model"
 	"FirstProject/Model/validation"
+	"FirstProject/Model/Auth"
 
 	"image"
 	"image/jpeg"
@@ -16,7 +17,7 @@ import (
 	"errors"
 	"bytes"
 	// "log"
-	"fmt"
+	// "fmt"
 	"os"
 )
 
@@ -29,8 +30,6 @@ type Usecase interface{
 	GetUserByRecoverToken(string)(model.User, error)
 	Create(model.User) error
 	Update(model.User) error
-	UpdateSelf(model.User) error
-	UpdateAdmin(model.User) error
 	Delete(string) error
 	Register(model.User) error
 	SetProfileImage(string, multipart.File) error
@@ -38,6 +37,7 @@ type Usecase interface{
 
 var (
 	checker 	validation.Checker
+	crypter		Auth.Crypter
 )
 
 type UsersUsecase struct {
@@ -191,40 +191,6 @@ func (u *UsersUsecase) Update(user model.User) (err error) {
 	return
 }
 
-func (u *UsersUsecase) UpdateSelf(user model.User) (err error){
-
-	var fieldsRequired []string
-	fieldsRequired = append(fieldsRequired, user.Username, user.Password, user.Email, user.GroupId)
-
-	if !checker.HasFieldsRequired(fieldsRequired){
-		err = errors.New("EmptyFieldsError")
-		return
-	}
-
-	if err = u.repo.Update(user); err != nil {
-		err = errors.New("UpdateUserError")
-		return
-	}
-	return
-}
-
-func (u *UsersUsecase) UpdateAdmin(user model.User) (err error){
-
-	var fieldsRequired  []string
-	fieldsRequired = append(fieldsRequired, user.Username, user.Role, user.Email, user.GroupId)
-
-	if !checker.HasFieldsRequired(fieldsRequired){
-		err = errors.New("EmptyFieldsError")
-		return
-	}
-
-	if err = u.repo.Update(user); err != nil {
-		err = errors.New("UpdateUserError")
-		return
-	}
-	return 
-}
-
 func (u *UsersUsecase) Delete(userId string) (err error) {
 	err = u.repo.Delete(userId)
 
@@ -232,6 +198,21 @@ func (u *UsersUsecase) Delete(userId string) (err error) {
 		err = errors.New("DeleteUserError")
 	}
 	return
+}
+
+func (u *UsersUsecase) Login(user model.User, userDb model.User) error {
+
+	if user.NotExists(){
+		return errors.New("UserNotExistsError")
+	}
+
+	err := crypter.PasswordCoincides(user.Password, userDb.Password)
+
+	if err != nil {
+		return err
+	}
+	
+	return nil
 }
 
 func (u *UsersUsecase) Register(user model.User) (err error){

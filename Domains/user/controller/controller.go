@@ -175,8 +175,8 @@ func (u *UsersController) CreateUser(w http.ResponseWriter, r *http.Request){
 
 	user.Password, _ = crypter.Crypt(user.Password)
 
-	if err := u.UsersUsecase.Create(user); err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.UsersUsecase.Create(user)) {
+		respond.WithError(w, http.StatusBadRequest, "CreateUserError")
 		return
 	}
 
@@ -190,9 +190,7 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 	GetDataFromBodyJSONRequest(r, &userToUpdate)
 	GetDataFromHeaderRequest(r)
 
-	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent) 
-	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
-	fmt.Println("(UpdateUser): Id user requesting: " + userIdRequesting)
+	userRequesting := u.GetUserRequesting()
 	fmt.Println("(UpdateUser): Id user wants upda: " + userToUpdate.Id.Hex())
 
 	roleUsed := Helper.WhichRoleIsUsed(userRequesting, userToUpdate)
@@ -201,59 +199,19 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		case "SELF":
-			u.UpdateSelf(userToUpdate, w, r)
+			userToUpdate.SetRole("user")
 		case "ADMIN":
-			u.UpdateAdmin(userToUpdate, w, r)
+			// add mongodb parameter to not allow changing password
 	}
-}
 
-func (u *UsersController) UpdateSelf(userToUpdate model.User, w http.ResponseWriter, r *http.Request) {
-	
-	userToUpdate.Role = "user"
+	newPassword, _ := crypter.Crypt(userToUpdate.Password)
+	PrepareUserForUpdate(&userToUpdate, newPassword)
 
-	newPasswordSaved := userToUpdate.Password
-	userToUpdate.EmptyPassword()
-
-	newJWT := authenticator.GenerateJWT(userToUpdate)
-	userToUpdate.Jwt = newJWT
-
-	userToUpdate.Password, _ = crypter.Crypt(newPasswordSaved)
-
-	err := u.UsersUsecase.UpdateSelf(userToUpdate)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.UsersUsecase.Update(userToUpdate)){
+		respond.WithError(w, http.StatusBadRequest, "UpdateUserError")
 		return
 	}
 	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:userToUpdate.Jwt})
-}
-
-func (u *UsersController) UpdateAdmin(userToUpdate model.User, w http.ResponseWriter, r *http.Request){
-
-	userToUpdateInBD, err := u.UsersUsecase.GetById(userToUpdate.Id.Hex())
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, "UserNotExists")
-		return
-	}
-
-	userToUpdate.EmptyPassword()
-	
-	newJWT := authenticator.GenerateJWT(userToUpdate)
-	userToUpdate.Jwt = newJWT
-
-	userToUpdate.Password = userToUpdateInBD.Password
-
-	err = u.UsersUsecase.UpdateAdmin(userToUpdate)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	respond.WithJson(w, http.StatusOK, auth.ResponseToken{
-		Token:userToUpdate.Jwt,
-	})
 }
 
 func (u *UsersController) UpdateUserWithoutUpdatingPassword(w http.ResponseWriter, r *http.Request){
@@ -262,17 +220,10 @@ func (u *UsersController) UpdateUserWithoutUpdatingPassword(w http.ResponseWrite
 	GetDataFromBodyJSONRequest(r, &userToUpdate)
 	GetDataFromHeaderRequest(r)
 
-	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent) 
-	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
-	fmt.Println("(UpdateUser): Id user requesting: " + userIdRequesting)
-	fmt.Println("(UpdateUser): Id user wants upda: " + userToUpdate.Id.Hex())
+	userRequesting := u.GetUserRequesting()
+	fmt.Println("(UpdateUser): Id user wants upda: " + userToUpdate.GetId())
 
-	userToUpdateInBD, err := u.UsersUsecase.GetById(userToUpdate.Id.Hex())
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, "UserNotExists")
-		return
-	}
+	userToUpdateInBD, _ := u.UsersUsecase.GetById(userToUpdate.GetId())
 
 	roleUsed := Helper.WhichRoleIsUsed(userRequesting, userToUpdateInBD)
 	switch roleUsed {
@@ -280,29 +231,24 @@ func (u *UsersController) UpdateUserWithoutUpdatingPassword(w http.ResponseWrite
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		case "SELF":
-			userToUpdate.Role = "user"
-
+			userToUpdate.SetRole("user")
 		case "ADMIN":
 	}
 
-	userToUpdate.EmptyPassword()
-	userToUpdate.Jwt = authenticator.GenerateJWT(userToUpdate)
-	userToUpdate.Password = userToUpdateInBD.Password
+	newPassword := userToUpdateInBD.Password
+	PrepareUserForUpdate(&userToUpdate, newPassword)
 
-	if err = u.UsersUsecase.Update(userToUpdate); err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.UsersUsecase.Update(userToUpdate)) {
+		respond.WithError(w, http.StatusBadRequest, "UpdateUserError")
 		return
 	}
-
-	respond.WithJson(w, http.StatusOK, auth.ResponseToken{
-		Token:userToUpdate.Jwt,
-	})	
+	respond.WithJson(w, http.StatusOK, auth.ResponseToken{ Token:userToUpdate.Jwt })	
 }
 
 func (u *UsersController) DeleteUser(w http.ResponseWriter, r *http.Request){
 
 	idUser := GetIdFromUrl(r)
-	err:= u.UsersUsecase.Delete(idUser);
+	err := u.UsersUsecase.Delete(idUser);
 
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
@@ -324,30 +270,21 @@ func (u *UsersController) Login(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	err = crypter.PasswordCoincides(userDb.Password, user.Password)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.Login(user, userDb)){
+		respond.WithError(w, http.StatusBadRequest, "LoginError")
 		return
 	}
 
-	savedPassword := userDb.Password
+	savedPWD := userDb.Password
+	CleanUserPasswordAndJWT(&userDb)
+	GenerateJWTAndSaveInUser(&userDb)
+	userDb.SetPassword(savedPWD)
 
-	userDb.Password = ""
-	userDb.Jwt = ""
-
-	token := authenticator.GenerateJWT(userDb)
-
-	userDb.Jwt = token
-	userDb.Password = savedPassword
-
-	err = u.UsersUsecase.Update(userDb)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.UsersUsecase.Update(userDb)) {
+		respond.WithError(w, http.StatusBadRequest, "UpdateUserError")
 		return
 	}
-	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:token})
+	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:userDb.Jwt})
 }
 
 func (u *UsersController) Register(w http.ResponseWriter, r *http.Request){
@@ -357,19 +294,21 @@ func (u *UsersController) Register(w http.ResponseWriter, r *http.Request){
 
 	GetDataFromBodyJSONRequest(r, &user)
 
-	user.Password, _ = crypter.Crypt(user.Password)
-	user.Role = "user"
+	newPassword, _ := crypter.Crypt(user.Password)
 
-	if err := u.UsersUsecase.Register(user); err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	user.SetPassword(newPassword)
+	user.SetRole("user")
+
+	if ActionGivesError(u.UsersUsecase.Register(user)) {
+		respond.WithError(w, http.StatusBadRequest, "RegisterError")
 		return
 	}
-
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
 func (u *UsersController) SendRecover(w http.ResponseWriter, r *http.Request){
 	
+	// REFACTOR
 	var user model.User
 	GetDataFromBodyJSONRequest(r, &user)
 
@@ -400,7 +339,6 @@ func (u *UsersController) SendRecover(w http.ResponseWriter, r *http.Request){
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
@@ -437,14 +375,12 @@ func (u *UsersController) SetProfileImage(w http.ResponseWriter, r *http.Request
 	userId := r.FormValue("id")
 	multiPartFile, _, err := r.FormFile("img")
 
-	if err != nil {
+	if ActionGivesError(err) {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = u.UsersUsecase.SetProfileImage(userId, multiPartFile)
-
-	if err != nil {
+	if ActionGivesError(u.UsersUsecase.SetProfileImage(userId, multiPartFile)) {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -473,7 +409,7 @@ func (u *UsersController) GetAllTimers(w http.ResponseWriter, r *http.Request){
 	
 	timers, err := u.TimersUsecase.GetAll()
 
-	if err != nil {
+	if ActionGivesError(err) {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -487,7 +423,7 @@ func (u *UsersController) GetTimerById(w http.ResponseWriter, r *http.Request){
 	timerId := GetIdFromUrl(r)
 	timer, err := u.TimersUsecase.GetById(timerId)
 
-	if err != nil {
+	if ActionGivesError(err) {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -501,7 +437,7 @@ func (u *UsersController) GetTimersByUserId(w http.ResponseWriter, r *http.Reque
 	userId := GetIdFromUrl(r)
 	timers, err := u.TimersUsecase.GetAllByUserId(userId)
 
-	if err != nil {
+	if ActionGivesError(err) {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -517,10 +453,8 @@ func (u *UsersController) CreateTimer(w http.ResponseWriter, r *http.Request){
 
 	GetDataFromBodyJSONRequest(r, &timer)
 
-	err := u.TimersUsecase.Create(timer)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.TimersUsecase.Create(timer)) {
+		respond.WithError(w, http.StatusBadRequest, "CreateTimerError")
 		return
 	}
 
@@ -533,10 +467,8 @@ func (u *UsersController) UpdateTimer(w http.ResponseWriter, r *http.Request){
 	var timer model.Timer
 	GetDataFromBodyJSONRequest(r, &timer)
 
-	err := u.TimersUsecase.Update(timer)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.TimersUsecase.Update(timer)) {
+		respond.WithError(w, http.StatusBadRequest, "UpdateTimerError")
 		return
 	}
 
@@ -547,10 +479,9 @@ func (u *UsersController) UpdateTimer(w http.ResponseWriter, r *http.Request){
 func (u *UsersController) DeleteTimer(w http.ResponseWriter, r *http.Request){
 
 	timerId := GetIdFromUrl(r)
-	err := u.TimersUsecase.Delete(timerId)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	
+	if ActionGivesError(u.TimersUsecase.Delete(timerId)) {
+		respond.WithError(w, http.StatusBadRequest, "DeleteTimerError")
 		return
 	}
 
@@ -560,16 +491,12 @@ func (u *UsersController) DeleteTimer(w http.ResponseWriter, r *http.Request){
 func (u *UsersController) StartTimer(w http.ResponseWriter, r *http.Request){
 
 	var user model.User
-	var timer model.Timer
 
 	GetDataFromBodyJSONRequest(r, &user)
 	GetDataFromHeaderRequest(r)
 
-	userIdRequesting,_ := authenticator.GetUserIdFromJWT(jwtSent)
-	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
-	fmt.Println("(StartTimer): Id user requesting: " + userIdRequesting)
-	fmt.Println("(StartTimer): Id user wants to start timer: " + user.Id.Hex())
-
+	userRequesting := u.GetUserRequesting()
+	fmt.Println("(StartTimer): Id user wants to start timer: " + userRequesting.GetId())
 
 	roleUsed := Helper.WhichRoleIsUsed(userRequesting, model.User{Id: user.Id})
 	switch roleUsed {
@@ -580,14 +507,10 @@ func (u *UsersController) StartTimer(w http.ResponseWriter, r *http.Request){
 		case "ADMIN":
 	}
 
-	timer.Id = bson.NewObjectId()
-	timer.UserId = user.Id.Hex()
-	timer.Start = time.Now().Unix()
+	timer := CreateTimerStruct(user)
 
-	err := u.TimersUsecase.StartTimer(timer)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.TimersUsecase.StartTimer(timer)) {
+		respond.WithError(w, http.StatusBadRequest, "StartTimerError")
 		return
 	}
 
@@ -601,21 +524,9 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 	GetDataFromBodyJSONRequest(r, &timer)
 	GetDataFromHeaderRequest(r)
 	
-	timerDb, err := u.TimersUsecase.GetById(timer.Id.Hex())
+	timerDb, _ := u.TimersUsecase.GetById(timer.GetId())
 
-	if timerDb.NotExists() { // MUST BE CHECKED IF IT WORKS
-		respond.WithError(w, http.StatusBadRequest, "TimerNotExistsError")
-		return
-	}
-
-	if timerDb.IsAlreadyFinished() {
-		respond.WithError(w, http.StatusBadRequest, "TimerAlreadyFinished")
-		return
-	}
-
-	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent)
-	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
-	fmt.Println("(FinishTimer): Id user requesting: " + userIdRequesting)
+	userRequesting := u.GetUserRequesting()
 	fmt.Println("(FinishTimer): Id user wants stop: " + timerDb.UserId)
 
 	roleUsed := Helper.WhichRoleIsUsed(userRequesting, model.User{Id: bson.ObjectIdHex(timerDb.UserId)})
@@ -625,16 +536,12 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 			return
 		case "SELF":
 		case "ADMIN":
-	}
-	
-	finishTime := time.Now().Unix()
-	duration := finishTime - timerDb.Start
+	}	
 
-	timerDb.Finish = finishTime
-	timerDb.Duration = duration
+	SaveFinishAndDuration(timerDb)
 
-	if err = u.TimersUsecase.Update(timerDb); err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	if ActionGivesError(u.TimersUsecase.FinishTimer(timerDb)) {
+		respond.WithError(w, http.StatusBadRequest, "FinishTimerError")
 		return
 	}
 
@@ -644,17 +551,15 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 		SendFinishNotificationToTheGroup(userOwnerOfTimer)
 	}
 
-	timerFormatted := Helper.FormatTimerForResponse(timerDb)
-	err = mailSender.SendFinishedTime(userOwnerOfTimer.Email, timerFormatted)
-
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+	timerFormatted := FormatTimerForResponse(timerDb)
+	if ActionGivesError(mailSender.SendFinishedTime(userOwnerOfTimer.Email, timerFormatted)) {
+		respond.WithError(w, http.StatusBadRequest, "SendingEmailError")
 		return
 	}
-
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
+//
 func GetIdFromUrl(request *http.Request) (id string) {
 	vars := mux.Vars(request)
 	id = vars["id"]
@@ -675,4 +580,51 @@ func SendFinishNotificationToTheGroup(userOwnerOfTimer model.User){
 			}
 		}
 	}
+}
+func (u *UsersController) GetUserRequesting() model.User {
+	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent) 
+	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
+	fmt.Println("(GetUserRequesting): Id user requesting: " + userIdRequesting)
+	return userRequesting
+}
+
+// Needs a pointer for saving JWT everywhere it's called.
+// At the same time, needs the struct for generating a JWT.
+
+func GenerateJWTAndSaveInUser(userPointer *model.User){
+	var user model.User
+	user = *userPointer
+	newJWT := authenticator.GenerateJWT(user)
+	userPointer.SetJWT(newJWT)
+}
+func SaveFinishAndDuration(timer model.Timer){
+	finishTime := time.Now().Unix()
+	duration := finishTime - timer.Start
+
+	timer.Finish = finishTime
+	timer.Duration = duration
+}
+func FormatTimerForResponse(timer model.Timer) model.TimerFormatted {
+	return Helper.FormatTimerForResponse(timer)
+}
+func ActionGivesError(err error) bool {
+	if err != nil {
+		return true
+	}
+	return false
+}
+func CleanUserPasswordAndJWT(userPointer *model.User){
+	userPointer.EmptyPassword()
+	userPointer.EmptyJWT()
+}
+func CreateTimerStruct(userOwner model.User) (timer model.Timer) {
+	timer.Id = bson.NewObjectId()
+	timer.UserId = userOwner.GetId()
+	timer.Start = time.Now().Unix()
+	return
+}
+func PrepareUserForUpdate(userPointer *model.User, newPassword string){
+	userPointer.EmptyPassword()
+	GenerateJWTAndSaveInUser(userPointer)
+	userPointer.SetPassword(newPassword)
 }
