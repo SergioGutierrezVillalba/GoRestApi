@@ -6,7 +6,7 @@ import (
 	"time"
 	"fmt"
 
-	"FirstProject/Model/auth"
+	"FirstProject/Model/Auth"
 	"FirstProject/Model"	
 )
 

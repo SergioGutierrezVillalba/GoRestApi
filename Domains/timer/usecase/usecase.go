@@ -6,6 +6,7 @@ import (
 	"FirstProject/Model/validation"
 
 	"errors"
+	// "log"
 )
 
 var (
@@ -97,8 +98,5 @@ func (t *TimerUsecase) StartTimer(timer model.Timer)(err error){
 	return
 }
 func (t *TimerUsecase) FinishTimer(timer model.Timer) error {
-	if timer.IsAlreadyFinished() {
-		return errors.New("TimerAlreadyFinished")
-	}
-	return t.Update(timer)
+	return t.repo.Update(timer)
 }

@@ -4,7 +4,7 @@ import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"FirstProject/Model"
-	// "fmt"
+	"fmt"
 )
 
 type MongoDbRepository struct{
@@ -54,4 +54,41 @@ func (m *MongoDbRepository) Update(user model.User) error{
 
 func (m *MongoDbRepository) Delete(userId string) error{
 	return m.Db.C("users").RemoveId(bson.ObjectIdHex(userId))
+}
+
+func (m *MongoDbRepository) GetTasksOnTheSameDateAsUserTimers(userId string)([]model.Task, error) {
+
+	var tasks []model.Task
+	pipe := m.Db.C("tasks").Pipe([]bson.M{
+		bson.M{
+			"$lookup": bson.M{
+				"from":			"times",
+				"localField": 	"timerId",
+				"foreignField":	"_id",
+				"as":			"timers",
+			},
+		},
+		bson.M{
+			"$lookup": bson.M{
+				"from":			"users",
+				"localField": 	"timers.userId",
+				"foreignField":	"_id",
+				"as":			"userTasks",
+			},
+		},
+		// bson.M{
+		// 	"$project": bson.M{
+		// 		"timers": 0,
+		// 	},
+		// },
+		// bson.M{
+		// 	"$match": bson.M{ 
+		// 		"_id":bson.ObjectIdHex(userId),
+		// 	},
+		// },
+	})
+
+	err := pipe.All(&tasks)
+	fmt.Println(tasks)
+	return tasks, err
 }

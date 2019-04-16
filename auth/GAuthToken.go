@@ -9,7 +9,7 @@ import (
 
 	"FirstProject/Model"
 	"FirstProject/Model/helper"
-	"FirstProject/Model/auth"
+	"FirstProject/Model/Auth"
 	"FirstProject/Domains/user/usecase"
 	repo "FirstProject/Domains/user/entity"
 

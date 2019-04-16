@@ -31,13 +31,16 @@ type Usecase interface{
 	Create(model.User) error
 	Update(model.User) error
 	Delete(string) error
+	Login(model.User, model.User) error
 	Register(model.User) error
 	SetProfileImage(string, multipart.File) error
+
+	GetTasksOnTheSameDateAsUserTimers(userId string) ([]model.Task, error)
 }
 
 var (
 	checker 	validation.Checker
-	crypter		Auth.Crypter
+	crypter		auth.Crypter
 )
 
 type UsersUsecase struct {
@@ -206,7 +209,7 @@ func (u *UsersUsecase) Login(user model.User, userDb model.User) error {
 		return errors.New("UserNotExistsError")
 	}
 
-	err := crypter.PasswordCoincides(user.Password, userDb.Password)
+	err := crypter.PasswordCoincides(userDb.Password, user.Password)
 
 	if err != nil {
 		return err
@@ -289,6 +292,10 @@ func (u *UsersUsecase) SetProfileImage(userId string, file multipart.File) (erro
 		return err
 	}
 	return nil
+}
+
+func (u *UsersUsecase) GetTasksOnTheSameDateAsUserTimers(userId string) ([]model.Task, error) {
+	return u.repo.GetTasksOnTheSameDateAsUserTimers(userId)
 }
 
 // Must evolve into ImageDirectory Struct

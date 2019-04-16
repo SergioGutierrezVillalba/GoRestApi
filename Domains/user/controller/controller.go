@@ -4,7 +4,7 @@ import (
 	usersUsecase "FirstProject/Domains/user/usecase"
 	timersUsecase "FirstProject/Domains/timer/usecase"
 
-	"FirstProject/Model/auth"
+	"FirstProject/Model/Auth"
 	"FirstProject/Model/helper"
 	"FirstProject/Model/socket"
 	"FirstProject/Model/mail"
@@ -39,6 +39,8 @@ type Controller interface{
 	
 	StartWebSocket(w http.ResponseWriter, r *http.Request)
 	FinishWebSocket(w http.ResponseWriter, r *http.Request)
+
+	GetTasksOnTheSameDateAsUserTimersByUserId(w http.ResponseWriter, r *http.Request)
 
 	GetAllTimers(w http.ResponseWriter, r *http.Request)
 	GetTimerById(w http.ResponseWriter, r *http.Request)
@@ -214,6 +216,8 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request){
 	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token:userToUpdate.Jwt})
 }
 
+// TODO switch can be replaced to not doing it 
+// twice each time I try to check the userRole?
 func (u *UsersController) UpdateUserWithoutUpdatingPassword(w http.ResponseWriter, r *http.Request){
 
 	var userToUpdate model.User
@@ -270,7 +274,7 @@ func (u *UsersController) Login(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	if ActionGivesError(u.Login(user, userDb)){
+	if ActionGivesError(u.UsersUsecase.Login(user, userDb)){
 		respond.WithError(w, http.StatusBadRequest, "LoginError")
 		return
 	}
@@ -403,6 +407,20 @@ func (u *UsersController) GetProfileImage(w http.ResponseWriter, r *http.Request
 	})
 }
 
+// TASKS CONTEXT
+
+func (u *UsersController) GetTasksOnTheSameDateAsUserTimersByUserId(w http.ResponseWriter, r *http.Request){
+
+	userId := GetIdFromUrl(r)
+	tasks, err := u.UsersUsecase.GetTasksOnTheSameDateAsUserTimers(userId)
+
+	if ActionGivesError(err){
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	respond.WithJson(w, http.StatusOK, tasks)
+}
+
 // TIMERS CONTEXT
 
 func (u *UsersController) GetAllTimers(w http.ResponseWriter, r *http.Request){
@@ -526,6 +544,10 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 	
 	timerDb, _ := u.TimersUsecase.GetById(timer.GetId())
 
+	if timerDb.IsAlreadyFinished(){
+		respond.WithError(w, http.StatusBadRequest, "TimerAlreadyFinished")
+	}
+
 	userRequesting := u.GetUserRequesting()
 	fmt.Println("(FinishTimer): Id user wants stop: " + timerDb.UserId)
 
@@ -538,7 +560,7 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 		case "ADMIN":
 	}	
 
-	SaveFinishAndDuration(timerDb)
+	SaveFinishAndDuration(&timerDb)
 
 	if ActionGivesError(u.TimersUsecase.FinishTimer(timerDb)) {
 		respond.WithError(w, http.StatusBadRequest, "FinishTimerError")
@@ -597,12 +619,12 @@ func GenerateJWTAndSaveInUser(userPointer *model.User){
 	newJWT := authenticator.GenerateJWT(user)
 	userPointer.SetJWT(newJWT)
 }
-func SaveFinishAndDuration(timer model.Timer){
+func SaveFinishAndDuration(timerPointer *model.Timer){
 	finishTime := time.Now().Unix()
-	duration := finishTime - timer.Start
+	duration := finishTime - timerPointer.Start
 
-	timer.Finish = finishTime
-	timer.Duration = duration
+	timerPointer.Finish = finishTime
+	timerPointer.Duration = duration
 }
 func FormatTimerForResponse(timer model.Timer) model.TimerFormatted {
 	return Helper.FormatTimerForResponse(timer)

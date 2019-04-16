@@ -57,6 +57,9 @@ func (a *Api) Start(session *mgo.Session){
 	sendRecover := http.HandlerFunc(usersController.SendRecover)
 	resetPassword := http.HandlerFunc(usersController.ResetPassword)
 
+	// TASKS HANDLERS
+	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(usersController.GetTasksOnTheSameDateAsUserTimersByUserId)
+
 	
 	// PROFILE IMAGES HANDLERS
 	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
@@ -95,6 +98,8 @@ func (a *Api) Start(session *mgo.Session){
 	r.Handle("/users/profileimg", setProfileImageToUser).Methods("PUT")
 	r.Handle("/users/profileimg/{id}", getProfileImage).Methods("GET")
 
+	// TASKS ROUTES
+	r.Handle("/tasks/finished/user/{id}", getTasksOnTheSameDateAsUserTimersByUserId).Methods("GET")
 
 	// TIMERS ROUTES
 	r.Handle("/timers", getTimers).Methods("GET")
