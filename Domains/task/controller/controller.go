@@ -12,6 +12,7 @@ import (
 type Controller interface{
 
 	GetTasksOnTheSameDateAsUserTimersByUserId(w http.ResponseWriter, r *http.Request)
+	GetTasksAfterDateGiven(w http.ResponseWriter, r *http.Request)
 
 }
 
@@ -22,7 +23,6 @@ var (
 
 type TasksController struct {
 	TasksUsecase		tasksUsecase.Usecase
-
 }
 
 func NewController(t tasksUsecase.Usecase) Controller {
@@ -39,6 +39,19 @@ func (t *TasksController) GetTasksOnTheSameDateAsUserTimersByUserId(w http.Respo
 		respond.WithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	respond.WithJson(w, http.StatusOK, tasks)
+}
+
+func (t *TasksController) GetTasksAfterDateGiven(w http.ResponseWriter, r *http.Request) {
+	var date int64
+	date = 1555338589 // lunes, 15 de abril de 2019 16:29:49 GMT+02:00
+	tasks, err := t.TasksUsecase.GetTasksAfterDateGiven(date)
+
+	if ActionGivesError(err){
+		respond.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	respond.WithJson(w, http.StatusOK, tasks)
 }
 

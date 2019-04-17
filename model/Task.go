@@ -16,7 +16,8 @@ type TaskRepo struct {
 	TimerId			bson.ObjectId	`json:"timerId" bson:"timerId"`
 	Content			string			`json:"content"	bson:"content"`
 	CreationDate	int64			`json:"creationDate" bson:"creationDate"`
-	Timers			TimerRepo		`json:"timers" bson:"timers"`
+	TasksDone		int64			`json:"tasks_done_after_date" bson:"tasks_done_after_date"`
+	Timers			TimerRepo		`json:"timers" bson:"timers,omitempty"`
 }
 
 type TimerRepo struct {

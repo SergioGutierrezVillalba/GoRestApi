@@ -6,9 +6,8 @@ import (
 )
 
 type Usecase interface {
-
 	GetTasksOnTheSameDateAsUserTimers(userId string) ([]model.TaskRepo, error)
-
+	GetTasksAfterDateGiven(date int64)([]model.TaskRepo, error)
 }
 
 type TasksUsecase struct {
@@ -23,4 +22,8 @@ func NewUsecase(r repo.RepositoryInterface) Usecase {
 
 func (t *TasksUsecase) GetTasksOnTheSameDateAsUserTimers(userId string) ([]model.TaskRepo, error) {
 	return t.repo.GetTasksOnTheSameDateAsUserTimers(userId)
+}
+
+func (t *TasksUsecase) GetTasksAfterDateGiven(date int64)([]model.TaskRepo, error){
+	return t.repo.GetTasksAfterDateGiven(date)
 }

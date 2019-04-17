@@ -66,7 +66,7 @@ func (a *Api) Start(session *mgo.Session){
 	// TASKS HANDLERS
 	// TODO set Middleware here
 	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(tasksController.GetTasksOnTheSameDateAsUserTimersByUserId)
-
+	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetTasksAfterDateGiven)
 	
 	// PROFILE IMAGES HANDLERS
 	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
@@ -107,6 +107,7 @@ func (a *Api) Start(session *mgo.Session){
 
 	// TASKS ROUTES
 	r.Handle("/tasks/finished/user/{id}", getTasksOnTheSameDateAsUserTimersByUserId).Methods("GET")
+	r.Handle("/tasks/dateGiven", getTasksAfterDateGiven).Methods("GET")
 
 	// TIMERS ROUTES
 	r.Handle("/timers", getTimers).Methods("GET")
