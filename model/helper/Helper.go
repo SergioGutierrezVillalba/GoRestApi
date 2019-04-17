@@ -3,11 +3,14 @@ package helper
 import (
 	"net/http"
 	"strings"
+	"errors"
 	"time"
 	"fmt"
 
 	"FirstProject/Model/Auth"
 	"FirstProject/Model"	
+
+	"github.com/gorilla/mux"
 )
 
 var(
@@ -16,25 +19,38 @@ var(
 
 type Helper struct{}
 
-func (h *Helper) GetJWTFromHeader(r *http.Request) (cleanJWT string){
+func (h *Helper) GetJWTFromHeaderRequest(r *http.Request) (cleanJWT string, err error){
 
-	cleanJWT = ""
-	rawJWT:= r.Header["Authorization"][0]
+	err = errors.New("HeaderError")
+	rawJWT := r.Header.Get("Authorization")
 
 	if h.IsNotEmpty(rawJWT) {
 		if h.DoesntHasBearer(rawJWT) {
 			return
 		}
-		withoutBearer := strings.Split(rawJWT, "Bearer")[1]
-		cleanJWT = strings.Trim(withoutBearer, " ")
+		cleanJWT = QuitBearer(rawJWT)
+		err = nil
 	}
 	return
 }
 
-// NEEDED BECAUSE IT CAN MAKE PANIC IF NOT ARRIVES
-// Need to fix, " before token causes panic too
+func (h *Helper) IsNotEmpty(data string) bool {
+	if data == "" {
+		return false
+	}
+	return true
+}
+
 func (h *Helper) DoesntHasBearer(jwt string) bool {
 	return !strings.Contains(jwt, "Bearer")
+}
+
+// DO NOT QUIT whitespace before Bearer, is neccesary
+// for removing whitespace after word 'Bearer'
+func QuitBearer(rawJWT string)(cleanJWT string){
+	cleanJWT = strings.Replace(rawJWT, "Bearer ", "" , 1)
+	fmt.Println(cleanJWT)
+	return
 }
 
 func (h *Helper) IsUser(user model.User) bool {
@@ -57,13 +73,6 @@ func (h *Helper) IsUpdatingItself(userIdRequesting string, userIdUpdating string
 		return true
 	}
 	return false
-}
-
-func (h *Helper) IsNotEmpty(data string) bool {
-	if data == "" {
-		return false
-	}
-	return true
 }
 
 func (h *Helper) IsEmpty(data string) bool {
@@ -96,11 +105,25 @@ func (h *Helper) FormatTimersForResponse(timers [] model.Timer) (timersFormatted
 	return
 }
 
+func (h *Helper) GetIdFromUrl(request *http.Request) (id string) {
+	vars := mux.Vars(request)
+	id = vars["id"]
+	return
+}
+
+func (h *Helper) ActionGivesError(err error) bool {
+	if err != nil {
+		return true
+	}
+	return false
+}
+
+// TODO switch only here, not in all checks of userRole
+
 // We have to determine what user is Requesting and
 // which is susceptible to change to know which Role
 // has the user Requesting and in consequence what it
 // is allowed to do
-
 func (h *Helper) WhichRoleIsUsed (userRequesting model.User, userToModify model.User) (situation string) {
 	if h.IsUser(userRequesting) {
 		if !h.IsUpdatingItself(userRequesting.Id.Hex(), userToModify.Id.Hex()){

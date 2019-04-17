@@ -13,6 +13,4 @@ type RepositoryInterface interface{
 	Create(model.User) error
 	Update(model.User) error
 	Delete(string) error
-
-	GetTasksOnTheSameDateAsUserTimers(string)([]model.Task, error)
 }

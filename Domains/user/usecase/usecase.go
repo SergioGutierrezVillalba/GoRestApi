@@ -34,8 +34,6 @@ type Usecase interface{
 	Login(model.User, model.User) error
 	Register(model.User) error
 	SetProfileImage(string, multipart.File) error
-
-	GetTasksOnTheSameDateAsUserTimers(userId string) ([]model.Task, error)
 }
 
 var (
@@ -292,10 +290,6 @@ func (u *UsersUsecase) SetProfileImage(userId string, file multipart.File) (erro
 		return err
 	}
 	return nil
-}
-
-func (u *UsersUsecase) GetTasksOnTheSameDateAsUserTimers(userId string) ([]model.Task, error) {
-	return u.repo.GetTasksOnTheSameDateAsUserTimers(userId)
 }
 
 // Must evolve into ImageDirectory Struct

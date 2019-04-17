@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 
 	"gopkg.in/mgo.v2/bson"
-	"github.com/gorilla/mux"
 	"github.com/segmentio/ksuid"
 )
 
@@ -39,8 +38,6 @@ type Controller interface{
 	
 	StartWebSocket(w http.ResponseWriter, r *http.Request)
 	FinishWebSocket(w http.ResponseWriter, r *http.Request)
-
-	GetTasksOnTheSameDateAsUserTimersByUserId(w http.ResponseWriter, r *http.Request)
 
 	GetAllTimers(w http.ResponseWriter, r *http.Request)
 	GetTimerById(w http.ResponseWriter, r *http.Request)
@@ -74,7 +71,7 @@ var (
 	requestInfo 	auth.RequestInfo
 )
 
-func NewUsersController(u usersUsecase.Usecase, t timersUsecase.Usecase) Controller {
+func NewController(u usersUsecase.Usecase, t timersUsecase.Usecase) Controller {
 	return &UsersController{
 		UsersUsecase: u,
 		TimersUsecase: t,
@@ -93,6 +90,7 @@ func(u *UsersController) StartWebSocket(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// TODO refactor
 	ws.On("message", func(e *socket.Event) {
 		tokenReceived = e.Data.(string)
 		uncryptedJWT := authenticator.Decrypt(authenticator.DecodeBase64(tokenReceived))
@@ -144,8 +142,6 @@ func (u *UsersController) GetUserByJwt(w http.ResponseWriter, r *http.Request){
 	GetDataFromHeaderRequest(r)
 
 	user, err := u.UsersUsecase.GetUserByJwt(jwtSent)
-	user.EmptyPassword()
-	user.EmptyJWT()
 
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, err.Error())
@@ -407,20 +403,6 @@ func (u *UsersController) GetProfileImage(w http.ResponseWriter, r *http.Request
 	})
 }
 
-// TASKS CONTEXT
-
-func (u *UsersController) GetTasksOnTheSameDateAsUserTimersByUserId(w http.ResponseWriter, r *http.Request){
-
-	userId := GetIdFromUrl(r)
-	tasks, err := u.UsersUsecase.GetTasksOnTheSameDateAsUserTimers(userId)
-
-	if ActionGivesError(err){
-		respond.WithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	respond.WithJson(w, http.StatusOK, tasks)
-}
-
 // TIMERS CONTEXT
 
 func (u *UsersController) GetAllTimers(w http.ResponseWriter, r *http.Request){
@@ -582,17 +564,19 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 }
 
 //
-func GetIdFromUrl(request *http.Request) (id string) {
-	vars := mux.Vars(request)
-	id = vars["id"]
+func GetIdFromUrl(r *http.Request) (id string) {
+	id = Helper.GetIdFromUrl(r)
 	return
 }
+
 func GetDataFromBodyJSONRequest(r *http.Request, dataSaver interface{}){
 	json.NewDecoder(r.Body).Decode(dataSaver)
 }
+
 func GetDataFromHeaderRequest(r *http.Request){
-	jwtSent = Helper.GetJWTFromHeader(r)
+	jwtSent, _ = Helper.GetJWTFromHeaderRequest(r)
 }
+
 func SendFinishNotificationToTheGroup(userOwnerOfTimer model.User){
 	for _, socketMap := range socketsMaps {
 		for groupId, websocket := range socketMap{
@@ -603,6 +587,7 @@ func SendFinishNotificationToTheGroup(userOwnerOfTimer model.User){
 		}
 	}
 }
+
 func (u *UsersController) GetUserRequesting() model.User {
 	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent) 
 	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
@@ -619,6 +604,7 @@ func GenerateJWTAndSaveInUser(userPointer *model.User){
 	newJWT := authenticator.GenerateJWT(user)
 	userPointer.SetJWT(newJWT)
 }
+
 func SaveFinishAndDuration(timerPointer *model.Timer){
 	finishTime := time.Now().Unix()
 	duration := finishTime - timerPointer.Start
@@ -626,25 +612,27 @@ func SaveFinishAndDuration(timerPointer *model.Timer){
 	timerPointer.Finish = finishTime
 	timerPointer.Duration = duration
 }
+
 func FormatTimerForResponse(timer model.Timer) model.TimerFormatted {
 	return Helper.FormatTimerForResponse(timer)
 }
-func ActionGivesError(err error) bool {
-	if err != nil {
-		return true
-	}
-	return false
+
+func ActionGivesError(e error) bool {
+	return Helper.ActionGivesError(e)
 }
+
 func CleanUserPasswordAndJWT(userPointer *model.User){
 	userPointer.EmptyPassword()
 	userPointer.EmptyJWT()
 }
+
 func CreateTimerStruct(userOwner model.User) (timer model.Timer) {
 	timer.Id = bson.NewObjectId()
 	timer.UserId = userOwner.GetId()
 	timer.Start = time.Now().Unix()
 	return
 }
+
 func PrepareUserForUpdate(userPointer *model.User, newPassword string){
 	userPointer.EmptyPassword()
 	GenerateJWTAndSaveInUser(userPointer)

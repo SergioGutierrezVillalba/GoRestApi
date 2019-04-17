@@ -18,28 +18,36 @@ import (
 type GAuthToken struct {}
 
 var (
-	respond				model.Responser
+	Respond				model.Responser
 
 	Helper				helper.Helper
 
 	Auth				auth.Authentication
 
-	usersRepo 			repo.RepositoryInterface
-	usersUsecase		usecase.Usecase
+	UsersRepo 			repo.RepositoryInterface
+	UsersUsecase		usecase.Usecase
+
+	NewSession			*mgo.Session
+
+	ResponseWriter		http.ResponseWriter
+	Request				*http.Request		
+	
+	JWTUsed				string
 )
 
 func (gAuthToken *GAuthToken) Middleware(h http.Handler, session *mgo.Session, methodRequested string) http.Handler {
 	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
 
-		newSession := session.Copy()
-		defer newSession.Close()
+		if ActionGivesError(SetGlobalVars(w, r, session)) {
+			Respond.WithError(w, http.StatusBadRequest, "Unauthorized")
+			return
+		}
 
-		StartRepositoriesAndUsecases(newSession /*repos slice*/)
+		InitRepoAndUsecaseRoleCheckers()
+		defer NewSession.Close()
 
-		jwt := Helper.GetJWTFromHeader(r)
-
-		if VerificationIsDenied(w, r, jwt, methodRequested) {
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
+		if VerificationIsDeniedFor(methodRequested) {
+			Respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		}
 		
@@ -47,32 +55,63 @@ func (gAuthToken *GAuthToken) Middleware(h http.Handler, session *mgo.Session, m
 	})
 }
 
-// usersRepo must be changed for a slice of repos
-func StartRepositoriesAndUsecases(session *mgo.Session/* repos slice */){
-	SetSessionToRepositories(session)
-	SetReposToUsecases(/* repos slice */)
+func ActionGivesError(err error) bool {
+	return Helper.ActionGivesError(err)
 }
-func SetSessionToRepositories(session *mgo.Session){
-	usersRepo = repo.NewMongoDbRepository(session)
-}
-func SetReposToUsecases(/*repos*/){
-	// for --> iterate over repos slice and create a map with ["context"] = newUsecase
-	// but if i only have to use users usecase for verification?
-	usersUsecase = usecase.NewUsecase(usersRepo)
-}
-func VerificationIsDenied(w http.ResponseWriter, r *http.Request, jwt string, methodRequested string) bool {
 
-	if UserIsNotAllowed(jwt, methodRequested){
+func SetGlobalVars(w http.ResponseWriter, r *http.Request, session *mgo.Session)(err error){
+	ResponseWriter = w
+	Request = r
+	NewSession = session.Copy()
+	JWTUsed, err = Helper.GetJWTFromHeaderRequest(r)
+	return
+}
+
+func InitRepoAndUsecaseRoleCheckers(){
+	SetSessionToRepo()
+	SetRepoToUsecase()
+}
+
+func SetSessionToRepo(){
+	UsersRepo = repo.NewMongoDbRepository(NewSession)
+}
+
+func SetRepoToUsecase(){
+	UsersUsecase = usecase.NewUsecase(UsersRepo)
+}
+
+func VerificationIsDeniedFor(methodRequested string) bool {
+
+	if UserIsNotAllowed(methodRequested){
 		return true
 	}
-	if JWTIsNotValid(w, r, jwt) {
+	if JWTIsNotValid() {
 		return true
 	}
 	return false 
 }
-func JWTIsNotValid(w http.ResponseWriter, r *http.Request, jwt string)bool{
 
-	uncryptedJWT := Auth.Decrypt(Auth.DecodeBase64(jwt))
+func UserIsNotAllowed(methodRequested string) bool {
+
+	userRequesting, _ := UsersUsecase.GetUserByJwt(JWTUsed)
+	fmt.Println("Rol:" + userRequesting.Role)
+		
+	if userRequesting.NotExists() {
+		fmt.Println("(Middleware blocks): User not exists")
+		return true
+	}
+
+	// TODO DoesntHasPermissions()
+	if !HasPermissionForDoThatRequest(userRequesting.Role, methodRequested){ 
+		fmt.Println("(Middleware blocks): Not enough permissions")
+		return true
+	}
+	return false
+}
+
+func JWTIsNotValid() bool {
+
+	uncryptedJWT := Auth.Decrypt(Auth.DecodeBase64(JWTUsed))
 	expiration := Auth.GetExpirationTimeOfJWT(uncryptedJWT)
 
 	if Auth.IsExpirated(expiration){
@@ -81,29 +120,16 @@ func JWTIsNotValid(w http.ResponseWriter, r *http.Request, jwt string)bool{
 	}
 	return false
 }
-func UserIsNotAllowed(jwt string, methodRequested string) bool {
 
-	userRequesting, _ := usersUsecase.GetUserByJwt(jwt)
-	fmt.Println("Rol:" + userRequesting.Role)
-		
-	if userRequesting.NotExists() {
-		fmt.Println("(Middleware blocks): User not exists")
-		return true
-	}
-
-	if !HasPermissionForDoThatRequest(userRequesting.Role, methodRequested){ // Doesnt has permissions
-		fmt.Println("(Middleware blocks): Not enough permissions")
-		return true
-	}
-	return false
-}
 func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) bool {
 
-	if roleVerified == "user" { // must be changed
+	// TODO must be changed when self and admin at the same time, have a problem
+	if roleVerified == "user" { 
 		roleVerified = "self"
 	}
 
-	Permissions	:= map[string][]string{ // to an external file
+	// TODO to an external file
+	Permissions	:= map[string][]string{ 
 		"GetAllUsers":{"ADMIN"},
 		"GetUserById":{"ADMIN"},
 		"GetMe":{"ADMIN", "SELF"},
@@ -124,6 +150,7 @@ func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) 
 		"FinishTimer":{"ADMIN", "SELF"},
 	}
 
+	// TODO CheckPermissionInPermissionsList()
 	for _, roleAllowed := range Permissions[methodRequested]{
 		if roleAllowed == strings.ToUpper(roleVerified) {
 			return true

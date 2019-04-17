@@ -8,12 +8,15 @@ import (
 	auth "FirstProject/auth"
 
 	usersController "FirstProject/Domains/user/controller"
+	tasksController	"FirstProject/Domains/task/controller"
 
-	usersUsecase "FirstProject/Domains/user/usecase"
-	timersUsecase "FirstProject/Domains/timer/usecase"
+	usersUsecase 	"FirstProject/Domains/user/usecase"
+	timersUsecase 	"FirstProject/Domains/timer/usecase"
+	tasksUsecase 	"FirstProject/Domains/task/usecase"
 
-	usersRepo "FirstProject/Domains/user/entity"
-	timersRepo "FirstProject/Domains/timer/entity"
+	usersRepo 	"FirstProject/Domains/user/entity"
+	timersRepo 	"FirstProject/Domains/timer/entity"
+	tasksRepo	"FirstProject/Domains/task/entity"
 
 	mgo "gopkg.in/mgo.v2"
 	"github.com/gorilla/mux"
@@ -33,15 +36,18 @@ func (a *Api) Start(session *mgo.Session){
 	// REPOS
 	usersRepo := usersRepo.NewMongoDbRepository(session)
 	timersRepo := timersRepo.NewMongoDbRepository(session)
+	tasksRepo := tasksRepo.NewMongoDbRepository(session)
 
 
 	// USECASES
 	usersUsecase := usersUsecase.NewUsecase(usersRepo)
 	timersUsecase := timersUsecase.NewUsecase(timersRepo)
+	tasksUsecase := tasksUsecase.NewUsecase(tasksRepo)
 
 
 	// INTERFACES
-	usersController := usersController.NewUsersController(usersUsecase, timersUsecase)
+	usersController := usersController.NewController(usersUsecase, timersUsecase)
+	tasksController := tasksController.NewController(tasksUsecase)
 
 
 	// USERS HANDLERS
@@ -58,7 +64,8 @@ func (a *Api) Start(session *mgo.Session){
 	resetPassword := http.HandlerFunc(usersController.ResetPassword)
 
 	// TASKS HANDLERS
-	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(usersController.GetTasksOnTheSameDateAsUserTimersByUserId)
+	// TODO set Middleware here
+	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(tasksController.GetTasksOnTheSameDateAsUserTimersByUserId)
 
 	
 	// PROFILE IMAGES HANDLERS
