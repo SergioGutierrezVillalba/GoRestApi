@@ -340,6 +340,7 @@ func (u *UsersController) SendRecover(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
+	token = CleanSlashesFromToken(token)
 	userDb.Token = token
 
 	if err = u.UsersUsecase.Update(userDb); err != nil {
@@ -651,4 +652,8 @@ func PrepareUserForUpdate(userPointer *model.User, newPassword string){
 	userPointer.EmptyPassword()
 	GenerateJWTAndSaveInUser(userPointer)
 	userPointer.SetPassword(newPassword)
+}
+
+func CleanSlashesFromToken(token string) string {
+	return Helper.CleanSlashesFromToken(token)
 }

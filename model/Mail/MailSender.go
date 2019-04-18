@@ -31,6 +31,7 @@ func (m *MailSender)SendRecover(email string, token string) error {
 	from := "sendermail495@gmail.com"
 	pass := "mail888mail"
 	to := email
+
 	urlToRecover := "http://localhost:4200/recover/" + token
 
 	msg:= "From: "+ from + "\n" +

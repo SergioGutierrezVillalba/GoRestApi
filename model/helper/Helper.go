@@ -132,3 +132,8 @@ func (h *Helper) WhichRoleIsUsed (userRequesting model.User, userToModify model.
 	}
 	return "ADMIN"
 }
+
+func (h *Helper) CleanSlashesFromToken(token string) string {
+	tokenSanitized := strings.Replace(token, "/", "", -1)
+	return tokenSanitized
+}
