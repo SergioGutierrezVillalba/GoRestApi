@@ -4,7 +4,7 @@ import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"FirstProject/Model"
-	// "fmt"
+	"fmt"
 )
 
 type MongoDbRepository struct{
@@ -30,7 +30,16 @@ func (m *MongoDbRepository) GetById(userId string) (user model.User, err error){
 }
 
 func (m *MongoDbRepository) GetUserByJwt(jwt string)(user model.User, err error){
-	err = m.Db.C("users").Find(bson.M{"jwt":jwt}).One(&user)
+	err = m.Db.C("users").Find(
+			bson.M{"jwt":jwt}, 
+			// bson.M{
+			// 	"$project": bson.M{
+			// 		"jwt":0,
+			// 	},
+			// },
+	).One(&user)
+
+	fmt.Println("(MongoDB): Role " + user.Role)
 	return
 }
 

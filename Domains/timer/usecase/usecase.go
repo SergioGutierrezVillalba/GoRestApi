@@ -6,6 +6,7 @@ import (
 	"FirstProject/Model/validation"
 
 	"errors"
+	// "log"
 )
 
 var (
@@ -20,6 +21,7 @@ type Usecase interface{
 	Update(model.Timer)error
 	Delete(string)error
 	StartTimer(timer model.Timer)error
+	FinishTimer(timer model.Timer) error
 }
 
 type TimerUsecase struct {
@@ -40,7 +42,6 @@ func (t *TimerUsecase) GetAll()(timers [] model.Timer, err error){
 	}
 	return
 }
-
 func (t *TimerUsecase) GetById(timerId string)(timer model.Timer, err error){
 	timer, err = t.repo.GetById(timerId)
 
@@ -49,7 +50,6 @@ func (t *TimerUsecase) GetById(timerId string)(timer model.Timer, err error){
 	}
 	return
 }
-
 func (t *TimerUsecase) GetAllByUserId(userId string)(timers [] model.Timer, err error){
 	timers, err = t.repo.GetAllByUserId(userId)
 	if err != nil {
@@ -58,7 +58,6 @@ func (t *TimerUsecase) GetAllByUserId(userId string)(timers [] model.Timer, err 
 	}
 	return
 }
-
 func (t *TimerUsecase) Create(timer model.Timer) error {
 
 	var fieldsRequired []string
@@ -75,8 +74,7 @@ func (t *TimerUsecase) Create(timer model.Timer) error {
 	}
 	return nil
 }
-
-func (t *TimerUsecase) Update(timer model.Timer)(err error){
+func (t *TimerUsecase) Update(timer model.Timer) error {
 	var fieldsRequired []string
 	fieldsRequired = append(fieldsRequired, timer.UserId)
 
@@ -84,14 +82,21 @@ func (t *TimerUsecase) Update(timer model.Timer)(err error){
 		return errors.New("EmptyFieldsError")
 	}
 
+	timerDb, err := t.GetById(timer.GetId())
+
+	if timerDb.NotExists() {
+		return err
+	}
+
 	return t.repo.Update(timer)
 }
-
 func (t *TimerUsecase) Delete(timerId string)(err error){
 	return t.repo.Delete(timerId)
 }
-
 func (t *TimerUsecase) StartTimer(timer model.Timer)(err error){
 	err = t.repo.InsertStartTime(timer)
 	return
+}
+func (t *TimerUsecase) FinishTimer(timer model.Timer) error {
+	return t.repo.Update(timer)
 }

@@ -96,19 +96,14 @@ func (a *Authentication) GetUserInfoFromJWT(rawJWT string)(model.User){
 	return claimsCustomized.User
 }
 
-func (a *Authentication) IsNotValid(expiration int64) bool {
+//----- jwt struct
+func (a *Authentication) IsExpirated(expiration int64) bool {
 	if expiration > time.Now().Unix(){
 		return false
 	}
 	return true
 }
-
-// func (a *Authentication) Hash(data string) (hashedData string, err error) {
-// 	h := hmac.New(sha256.New, []byte(secret))
-// 	h.Write([]byte(data))
-// 	hashedData = hex.EncodeToString(h.Sum(nil))
-// 	return
-// }
+//-----
 
 func (a *Authentication) Encrypt(rawData string) (encryptedData []byte) {
 	encryptedData = alyu.Encrypt([]byte(secret), []byte(rawData))

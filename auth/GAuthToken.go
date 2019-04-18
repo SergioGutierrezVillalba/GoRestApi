@@ -4,12 +4,14 @@ import (
 	"net/http"
 	"fmt"
 	"strings"
+	"encoding/json"
+	"io/ioutil"
 
 	mgo "gopkg.in/mgo.v2"
 
 	"FirstProject/Model"
 	"FirstProject/Model/helper"
-	"FirstProject/Model/auth"
+	"FirstProject/Model/Auth"
 	"FirstProject/Domains/user/usecase"
 	repo "FirstProject/Domains/user/entity"
 
@@ -18,55 +20,36 @@ import (
 type GAuthToken struct {}
 
 var (
-	respond				model.Responser
+	Respond				model.Responser
 
 	Helper				helper.Helper
 
 	Auth				auth.Authentication
 
-	usersRepo 			repo.RepositoryInterface
-	usersUsecase		usecase.Usecase
+	UsersRepo 			repo.RepositoryInterface
+	UsersUsecase		usecase.Usecase
+
+	NewSession			*mgo.Session
+
+	ResponseWriter		http.ResponseWriter
+	Request				*http.Request		
+	
+	JWTUsed				string
 )
 
 func (gAuthToken *GAuthToken) Middleware(h http.Handler, session *mgo.Session, methodRequested string) http.Handler {
 	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
 
-		newSession := session.Copy()
-		defer newSession.Close()
-
-		SetConnectors(newSession)
-		jwt := Helper.GetJWTFromHeader(r)
-
-		if Helper.IsEmpty(jwt) {
-			fmt.Println("(Middleware blocks): Empty JWT")
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
+		if ActionGivesError(SetGlobalVars(w, r, session)) {
+			Respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		}
 
-		uncryptedJWT := Auth.Decrypt(Auth.DecodeBase64(jwt))
-		expiration := Auth.GetExpirationTimeOfJWT(uncryptedJWT)
+		InitRepoAndUsecaseRoleCheckers()
+		defer NewSession.Close()
 
-		if Auth.IsNotValid(expiration){
-			fmt.Println("(Middleware says): Expirated time: " + string(expiration))
-			fmt.Println("(Middleware blocks): Expirated JWT")
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
-			return
-		}
-
-		userRequesting, err := usersUsecase.GetUserByJwt(jwt)
-		fmt.Println("Rol:" + userRequesting.Role)
-		
-		if err != nil {
-			fmt.Println("(Middleware blocks): JWT not exists")
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
-			return
-		}
-
-		r.Header.Add("User-Agent", userRequesting.Role)
-
-		if !HasPermissionForDoThatRequest(userRequesting.Role, methodRequested){
-			fmt.Println("(Middleware blocks): Not enough permissions")
-			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
+		if VerificationIsDeniedFor(methodRequested) {
+			Respond.WithError(w, http.StatusBadRequest, "Unauthorized")
 			return
 		}
 		
@@ -74,43 +57,101 @@ func (gAuthToken *GAuthToken) Middleware(h http.Handler, session *mgo.Session, m
 	})
 }
 
-func SetConnectors(session *mgo.Session){
-	usersRepo = repo.NewMongoDbRepository(session)
-	usersUsecase = usecase.NewUsecase(usersRepo)
+func ActionGivesError(err error) bool {
+	return Helper.ActionGivesError(err)
 }
 
-func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) bool {
+func SetGlobalVars(w http.ResponseWriter, r *http.Request, session *mgo.Session)(err error){
+	ResponseWriter = w
+	Request = r
+	NewSession = session.Copy()
+	JWTUsed, err = Helper.GetJWTFromHeaderRequest(r)
+	return
+}
 
-	if roleVerified == "user" {
+func InitRepoAndUsecaseRoleCheckers(){
+	SetSessionToRepo()
+	SetRepoToUsecase()
+}
+
+func SetSessionToRepo(){
+	UsersRepo = repo.NewMongoDbRepository(NewSession)
+}
+
+func SetRepoToUsecase(){
+	UsersUsecase = usecase.NewUsecase(UsersRepo)
+}
+
+func VerificationIsDeniedFor(methodRequested string) bool {
+
+	if UserIsNotAllowed(methodRequested){
+		return true
+	}
+	if JWTIsNotValid() {
+		return true
+	}
+	return false 
+}
+
+func UserIsNotAllowed(methodRequested string) bool {
+
+	userRequesting, _ := UsersUsecase.GetUserByJwt(JWTUsed)
+	fmt.Println("Rol:" + userRequesting.Role)
+		
+	if userRequesting.NotExists() {
+		fmt.Println("(Middleware blocks): User not exists")
+		return true
+	}
+
+	if DoesntHasPermissionForDoThatRequest(userRequesting.Role, methodRequested){ 
+		fmt.Println("(Middleware blocks): Not enough permissions")
+		return true
+	}
+	return false
+}
+
+func JWTIsNotValid() bool {
+
+	uncryptedJWT := Auth.Decrypt(Auth.DecodeBase64(JWTUsed))
+	expiration := Auth.GetExpirationTimeOfJWT(uncryptedJWT)
+
+	if Auth.IsExpirated(expiration){
+		fmt.Println("(Middleware blocks): Expirated JWT")
+		return true
+	}
+	return false
+}
+
+func DoesntHasPermissionForDoThatRequest(roleVerified string, methodRequested string) bool {
+
+	if roleVerified == "user" { 
 		roleVerified = "self"
 	}
 
-
-	Permissions	:= map[string][]string{
-		"GetAllUsers":{"ADMIN"},
-		"GetUserById":{"ADMIN"},
-		"GetMe":{"ADMIN", "SELF"},
-		"CreateUser":{"ADMIN"},
-		"UpdateUser":{"ADMIN", "SELF"},
-		"UpdateUserWithoutPassword":{"ADMIN", "SELF"},
-		"DeleteUser":{"ADMIN"},
-		"SetProfileImage":{"ADMIN", "SELF"},
-		"GetProfileImage":{"ADMIN", "SELF"},
-
-		"GetAllTimers":{"ADMIN"},
-		"GetTimerById":{"ADMIN"},
-		"GetTimersByUserId":{"ADMIN", "SELF"}, // needs more verification in self
-		"CreateTimer":{"ADMIN"},
-		"UpdateTimer":{"ADMIN"},
-		"DeleteTimer":{"ADMIN"},
-		"StartTimer":{"ADMIN", "SELF"},
-		"FinishTimer":{"ADMIN", "SELF"},
+	permissionsList := GetPermissionsList()
+	hasPermission := CheckInPermissionsListIfHasPermissions(permissionsList, roleVerified, methodRequested)
+	
+	if hasPermission {
+		return false
 	}
+	return true
+}
 
-	for _, roleAllowed := range Permissions[methodRequested]{
+func GetPermissionsList()(permissionsList map[string][]string){
+	file, _ := ioutil.ReadFile("./permissions.json")
+	err := json.Unmarshal([]byte(file), &permissionsList)
+	if err != nil {
+		fmt.Println("Error during permissions reading")
+	}
+	return
+}
+
+func CheckInPermissionsListIfHasPermissions(PermissisionsList map[string][]string, roleVerified string, methodRequested string) bool {
+	for _, roleAllowed := range PermissisionsList[methodRequested]{
 		if roleAllowed == strings.ToUpper(roleVerified) {
 			return true
 		}
 	}
 	return false
 }
+
