@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"fmt"
 	"strings"
+	"encoding/json"
+	"io/ioutil"
 
 	mgo "gopkg.in/mgo.v2"
 
@@ -101,8 +103,7 @@ func UserIsNotAllowed(methodRequested string) bool {
 		return true
 	}
 
-	// TODO DoesntHasPermissions()
-	if !HasPermissionForDoThatRequest(userRequesting.Role, methodRequested){ 
+	if DoesntHasPermissionForDoThatRequest(userRequesting.Role, methodRequested){ 
 		fmt.Println("(Middleware blocks): Not enough permissions")
 		return true
 	}
@@ -121,40 +122,36 @@ func JWTIsNotValid() bool {
 	return false
 }
 
-func HasPermissionForDoThatRequest(roleVerified string, methodRequested string) bool {
+func DoesntHasPermissionForDoThatRequest(roleVerified string, methodRequested string) bool {
 
-	// TODO must be changed when self and admin at the same time, have a problem
 	if roleVerified == "user" { 
 		roleVerified = "self"
 	}
 
-	// TODO to an external file
-	Permissions	:= map[string][]string{ 
-		"GetAllUsers":{"ADMIN"},
-		"GetUserById":{"ADMIN"},
-		"GetMe":{"ADMIN", "SELF"},
-		"CreateUser":{"ADMIN"},
-		"UpdateUser":{"ADMIN", "SELF"},
-		"UpdateUserWithoutUpdatingPassword":{"ADMIN", "SELF"},
-		"DeleteUser":{"ADMIN"},
-		"SetProfileImage":{"ADMIN", "SELF"},
-		"GetProfileImage":{"ADMIN", "SELF"},
-
-		"GetAllTimers":{"ADMIN"},
-		"GetTimerById":{"ADMIN"},
-		"GetTimersByUserId":{"ADMIN", "SELF"},
-		"CreateTimer":{"ADMIN"},
-		"UpdateTimer":{"ADMIN"},
-		"DeleteTimer":{"ADMIN"},
-		"StartTimer":{"ADMIN", "SELF"},
-		"FinishTimer":{"ADMIN", "SELF"},
+	permissionsList := GetPermissionsList()
+	hasPermission := CheckInPermissionsListIfHasPermissions(permissionsList, roleVerified, methodRequested)
+	
+	if hasPermission {
+		return false
 	}
+	return true
+}
 
-	// TODO CheckPermissionInPermissionsList()
-	for _, roleAllowed := range Permissions[methodRequested]{
+func GetPermissionsList()(permissionsList map[string][]string){
+	file, _ := ioutil.ReadFile("./permissions.json")
+	err := json.Unmarshal([]byte(file), &permissionsList)
+	if err != nil {
+		fmt.Println("Error during permissions reading")
+	}
+	return
+}
+
+func CheckInPermissionsListIfHasPermissions(PermissisionsList map[string][]string, roleVerified string, methodRequested string) bool {
+	for _, roleAllowed := range PermissisionsList[methodRequested]{
 		if roleAllowed == strings.ToUpper(roleVerified) {
 			return true
 		}
 	}
 	return false
 }
+

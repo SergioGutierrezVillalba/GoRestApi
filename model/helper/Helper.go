@@ -118,8 +118,6 @@ func (h *Helper) ActionGivesError(err error) bool {
 	return false
 }
 
-// TODO switch only here, not in all checks of userRole
-
 // We have to determine what user is Requesting and
 // which is susceptible to change to know which Role
 // has the user Requesting and in consequence what it

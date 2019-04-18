@@ -55,9 +55,6 @@ func (t *TasksController) GetTasksAfterDateGiven(w http.ResponseWriter, r *http.
 	respond.WithJson(w, http.StatusOK, tasks)
 }
 
-// TODO
-// GetByUserId, GetAll, UpdateByUserId, DeleteByUserId
-
 // Func
 func GetIdFromUrl(r *http.Request) (id string) {
 	id = Helper.GetIdFromUrl(r)

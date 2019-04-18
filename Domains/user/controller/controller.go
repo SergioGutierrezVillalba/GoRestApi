@@ -90,24 +90,38 @@ func(u *UsersController) StartWebSocket(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO refactor
+	// TODO SocketsList struct
 	ws.On("message", func(e *socket.Event) {
 		tokenReceived = e.Data.(string)
 		uncryptedJWT := authenticator.Decrypt(authenticator.DecodeBase64(tokenReceived))
 		userFromJWT := authenticator.GetUserInfoFromJWT(uncryptedJWT)
 		fmt.Println("(StartWebSocket): GroupId - " + userFromJWT.GroupId)
 
-		idMap := ksuid.New().String()
-		groupAndSocket := make(map[string]*socket.WebSocket)
-		groupAndSocket[userFromJWT.GroupId] = ws
-		socketsMaps[idMap] = groupAndSocket
+		usersGroupId := userFromJWT.GroupId
+		socketMap := CreateSocketMap(ws, usersGroupId)
+		AddSocketMapToSocketsMaps(socketMap)
+		// idMap := ksuid.New().String()
+		// groupAndSocket := make(map[string]*socket.WebSocket)
+		// groupAndSocket[userFromJWT.GroupId] = ws
+		// socketsMaps[idMap] = groupAndSocket
 
 		// log.Printf("[MESSAGE] %v", e.Data)
 		ws.Out <- (&socket.Event{
 			Name: "response",
-			Data: "Socket created |" + idMap,
+			Data: "Socket created",
 		}).Raw()
 	})
+}
+
+func CreateSocketMap(ws *socket.WebSocket, groupId string)(map[string]*socket.WebSocket){
+	socketMap := make(map[string]*socket.WebSocket)
+	socketMap[groupId] = ws
+	return socketMap
+}
+
+func AddSocketMapToSocketsMaps(socketMap map[string]*socket.WebSocket){
+	randomIdMap := ksuid.New().String()
+	socketsMaps[randomIdMap] = socketMap
 }
 
 func (u *UsersController) FinishWebSocket(w http.ResponseWriter, r *http.Request){

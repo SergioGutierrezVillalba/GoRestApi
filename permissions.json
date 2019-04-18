@@ -1,0 +1,19 @@
+{
+    "GetAllUsers": ["ADMIN"],
+    "GetUserById": ["ADMIN"],
+    "GetMe": ["SELF","ADMIN"],
+    "CreateUser": ["ADMIN"],
+    "UpdateUser": ["SELF","ADMIN"],
+    "UpdateUserWithoutUpdatingPassword": ["SELF","ADMIN"],
+    "DeleteUser": ["ADMIN"],
+    "SetProfileImage": ["SELF","ADMIN"],
+    "GetProfileImage": ["SELF","ADMIN"],
+    "GetAllTimers": ["ADMIN"],
+    "GetTimerById": ["ADMIN"],
+    "GetTimersByUserId": ["SELF","ADMIN"],
+    "CreateTimer": ["ADMIN"],
+    "UpdateTimer": ["ADMIN"],
+    "DeleteTimer": ["ADMIN"],
+    "StartTimer": ["SELF","ADMIN"],
+    "FinishTimer": ["SELF","ADMIN"]
+}

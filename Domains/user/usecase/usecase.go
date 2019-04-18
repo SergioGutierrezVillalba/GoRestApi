@@ -266,22 +266,6 @@ func (u *UsersUsecase) SetProfileImage(userId string, file multipart.File) (erro
 		return err2
 	}
 
-	// outputFile, err2 := os.Create(imgRoute)
-	// defer outputFile.Close()
-
-	// if err2 != nil {
-	// 	return err2
-	// }
-	
-	// switch format {
-	// 	case "jpg":
-	// 	case "jpeg":
-	// 		quality := jpeg.Options{Quality:80}
-	// 		jpeg.Encode(outputFile, myImage, &quality)
-	// 	case "png":
-	// 		png.Encode(outputFile, myImage)
-	// }
-
 	userDb, _ := u.repo.GetById(userId)
 	userDb.SetRouteImg(creationRoute)
 	userDb.EmptyProfileImage()
