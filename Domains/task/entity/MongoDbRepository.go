@@ -4,7 +4,7 @@ import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"FirstProject/Model"
-	"fmt"
+	// "fmt"
 )
 
 type MongoDbRepository struct {
@@ -64,7 +64,7 @@ func (m *MongoDbRepository) GetTasksOnTheSameDateAsUserTimers(userId string)([]m
 	return tasksRepo, err
 }
 
-func (m *MongoDbRepository) GetTasksAfterDateGiven(date int64)([]model.TaskRepo, error){
+func (m *MongoDbRepository) GetNumberOfTasksAfterDateGiven(date int64)([]model.TaskRepo, error){
 
 	var tasksRepo []model.TaskRepo
 	
@@ -72,16 +72,20 @@ func (m *MongoDbRepository) GetTasksAfterDateGiven(date int64)([]model.TaskRepo,
 		bson.M{
 			"$match": bson.M{ 
 				"$expr": bson.M { 
-					"creationDate": bson.M{"$gte" : date },
+					"$gte": []interface{}{"$creationDate", date},
 				},
 			},
 		},
 		bson.M{
 			"$count": "tasks_done_after_date",
 		},
+		bson.M{
+			"$project": bson.M{
+				"timers":0,
+			},
+		},
 	})
 
 	err := pipe.All(&tasksRepo)
-	fmt.Println(tasksRepo)
 	return tasksRepo, err
 }

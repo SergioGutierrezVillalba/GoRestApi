@@ -96,6 +96,7 @@ func VerificationIsDeniedFor(methodRequested string) bool {
 func UserIsNotAllowed(methodRequested string) bool {
 
 	userRequesting, _ := UsersUsecase.GetUserByJwt(JWTUsed)
+	
 	fmt.Println("Rol:" + userRequesting.Role)
 		
 	if userRequesting.NotExists() {
