@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"FirstProject/Collection"
+	"FirstProject/Fixtures"
+
 	auth "FirstProject/auth"
 
 	usersController "FirstProject/Domains/user/controller"
@@ -30,6 +33,8 @@ var (
 )
 
 func (a *Api) Start(session *mgo.Session){
+
+	RefillDatabaseIfItsEmpty(session)
 
 	r := mux.NewRouter()
 
@@ -66,7 +71,7 @@ func (a *Api) Start(session *mgo.Session){
 	// TASKS HANDLERS
 	// TODO set Middleware here
 	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(tasksController.GetTasksOnTheSameDateAsUserTimersByUserId)
-	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetTasksAfterDateGiven)
+	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetNumberOfTasksAfterDateGiven)
 	
 	// PROFILE IMAGES HANDLERS
 	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
@@ -140,4 +145,10 @@ func StartServerAndAllowConections(r *mux.Router){
 	} else {
 		fmt.Println("Listening on port 3003....")
 	}
+}
+
+func RefillDatabaseIfItsEmpty(session *mgo.Session){
+	Collection := collection.NewCollection(session)
+	Fixture := fixture.NewFixture(Collection)
+	Fixture.LoadFixtures()
 }
