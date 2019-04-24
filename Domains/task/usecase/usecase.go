@@ -7,7 +7,7 @@ import (
 
 type Usecase interface {
 	GetTasksOnTheSameDateAsUserTimers(userId string) ([]model.TaskRepo, error)
-	GetTasksAfterDateGiven(date int64)([]model.TaskRepo, error)
+	GetNumberOfTasksAfterDateGiven(date int64)([]model.TaskRepo, error)
 }
 
 type TasksUsecase struct {
@@ -24,6 +24,6 @@ func (t *TasksUsecase) GetTasksOnTheSameDateAsUserTimers(userId string) ([]model
 	return t.repo.GetTasksOnTheSameDateAsUserTimers(userId)
 }
 
-func (t *TasksUsecase) GetTasksAfterDateGiven(date int64)([]model.TaskRepo, error){
-	return t.repo.GetTasksAfterDateGiven(date)
+func (t *TasksUsecase) GetNumberOfTasksAfterDateGiven(date int64)([]model.TaskRepo, error){
+	return t.repo.GetNumberOfTasksAfterDateGiven(date)
 }
