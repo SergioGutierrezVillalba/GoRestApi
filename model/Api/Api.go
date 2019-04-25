@@ -8,6 +8,8 @@ import (
 	"FirstProject/Collection"
 	"FirstProject/Fixtures"
 
+	"FirstProject/Model/Sorter"
+
 	auth "FirstProject/auth"
 
 	usersController "FirstProject/Domains/user/controller"
@@ -35,6 +37,7 @@ var (
 func (a *Api) Start(session *mgo.Session){
 
 	RefillDatabaseIfItsEmpty(session)
+	Order()
 
 	r := mux.NewRouter()
 
@@ -145,6 +148,13 @@ func StartServerAndAllowConections(r *mux.Router){
 	} else {
 		fmt.Println("Listening on port 3003....")
 	}
+}
+
+func Order(){
+	slice := []int{2,5,9,2,3}
+	SliceSorter := sorter.Sorter{}
+	sliceSorted := SliceSorter.SortIntSlice(slice, "insertion")
+	log.Print(sliceSorted)
 }
 
 func RefillDatabaseIfItsEmpty(session *mgo.Session){

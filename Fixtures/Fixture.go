@@ -1,8 +1,11 @@
 package fixture
 
 import (
+
 	"FirstProject/Collection"
-	"FirstProject/Fixtures/user"
+	usercol "FirstProject/Collection/user"
+
+	userfix "FirstProject/Fixtures/user"
 )
 
 type Fixture struct {
@@ -16,10 +19,17 @@ func NewFixture(c collection.Collection) *Fixture {
 }
 
 func (f *Fixture) LoadFixtures(){
-
-	if f.Collection.IsEmpty("users") {
-		UserFixture := user.UserFixture{}
-		UserFixture.LoadUsersFixture()
-	}
+	f.LoadUsersFixture()
+	// and so on...
 	
+	
+}
+
+func (f *Fixture) LoadUsersFixture(){
+	// 1. Collection
+	UserCollection := usercol.NewUserCollection(f.Collection.Db)
+	// 2. Fixture
+	UserFixture := userfix.NewUserFixture(UserCollection)
+	// 3. Load
+	UserFixture.LoadFixture()
 }
