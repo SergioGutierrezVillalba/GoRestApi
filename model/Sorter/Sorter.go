@@ -5,12 +5,23 @@ import (
 	"log"
 	"testing"
 	"sort"
+	"math/rand"
 )
 
 type Sorter struct {}
 
 func (s *Sorter) SortIntSlice(slice []int, algorithm string) (sliceSorted []int){
 
+	switch algorithm {
+	case "insertion":
+		sliceSorted = SortUsingInsertionAlgo(slice)
+	case "quicksort":
+		sliceSorted = SortUsingQuicksortAlgo(slice)
+	}
+	return
+}
+
+func (s *Sorter)RunBenchmarks(){
 	br := testing.Benchmark(BenchmarkSortInsertionAlgo)
 	log.Print(br)
 
@@ -19,14 +30,6 @@ func (s *Sorter) SortIntSlice(slice []int, algorithm string) (sliceSorted []int)
 
 	br3 := testing.Benchmark(BenchmarkQuickSorted)
 	log.Print(br3)
-	
-	// switch algorithm {
-	// case "insertion":
-	// 	return SortUsingInsertionAlgo(slice)
-	// case "quicksort":
-	// 	return SortUsingQuicksortAlgo(slice) 
-	// }
-	return slice
 }
 
 func SortUsingInsertionAlgo(slice []int) (sliceSorted []int){
@@ -81,22 +84,32 @@ func BenchmarkSortNativeGO(b *testing.B){
 func BenchmarkQuickSorted(b *testing.B){
 	slice := []int{2,5,9,2,3,7,9,10,34}
 	for n := 0; n < b.N; n++ {
-		Quicksort(slice)
+		SortUsingQuicksortAlgo(slice)
 	}
 }
 
-func Quicksort(slice []int){
-	if len(slice) > 2 {
-		pivote := (slice[0] + slice[len(slice)-1] + slice[len(slice)-1/2])/3  // 1/2??
-	}
-}
-
-// func TraverseAllValuesAfterOnePosition(sliceToAdapt []int, positionToFree int)(sliceAdapted []int){
-// 	while len(sliceToAdapt) {
-
-// 	}
-// }
-
-func SortUsingQuicksortAlgo(slice []int) (sliceSorted []int){
-	return slice
+func SortUsingQuicksortAlgo(a []int) []int {
+    if len(a) < 2 {
+        return a
+    }
+      
+    left, right := 0, len(a)-1
+      
+    pivot := rand.Int() % len(a)
+      
+    a[pivot], a[right] = a[right], a[pivot]
+      
+    for i, _ := range a {
+        if a[i] < a[right] {
+            a[left], a[i] = a[i], a[left]
+            left++
+        }
+    }
+      
+    a[left], a[right] = a[right], a[left]
+      
+    SortUsingQuicksortAlgo(a[:left])
+    SortUsingQuicksortAlgo(a[left+1:])
+      
+    return a
 }

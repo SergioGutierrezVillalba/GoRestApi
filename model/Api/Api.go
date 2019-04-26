@@ -154,7 +154,7 @@ func Order(){
 	slice := []int{2,5,9,2,3}
 	SliceSorter := sorter.Sorter{}
 	sliceSorted := SliceSorter.SortIntSlice(slice, "insertion")
-	log.Print(sliceSorted)
+	_ = sliceSorted
 }
 
 func RefillDatabaseIfItsEmpty(session *mgo.Session){
