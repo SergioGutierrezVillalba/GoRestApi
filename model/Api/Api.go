@@ -38,6 +38,7 @@ func (a *Api) Start(session *mgo.Session){
 
 	RefillDatabaseIfItsEmpty(session)
 	Order()
+	OrderStringSlice()
 
 	r := mux.NewRouter()
 
@@ -154,7 +155,20 @@ func Order(){
 	slice := []int{2,5,9,2,3}
 	SliceSorter := sorter.Sorter{}
 	sliceSorted := SliceSorter.SortIntSlice(slice, "insertion")
+
+	sliceSortedInverse := SliceSorter.InverseSortIntSlice(slice, "insertion")
 	_ = sliceSorted
+	_ = sliceSortedInverse
+	
+	log.Print(sliceSortedInverse)
+}
+
+func OrderStringSlice(){
+	slice := []string{"By", "Ay", "Dy", "Cy"}
+	SliceSorter := sorter.Sorter{}
+	sliceSorted := SliceSorter.SortStringSlice(slice)
+
+	log.Print(sliceSorted)
 }
 
 func RefillDatabaseIfItsEmpty(session *mgo.Session){
