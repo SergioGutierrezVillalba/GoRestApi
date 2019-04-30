@@ -4,7 +4,6 @@ import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"FirstProject/Model"
-	// "fmt"
 )
 
 type MongoDbRepository struct {
@@ -19,9 +18,24 @@ func NewMongoDbRepository(s *mgo.Session) RepositoryInterface {
 	}
 }
 
-func (m *MongoDbRepository) GetTasksOnTheSameDateAsUserTimers(userId string)([]model.TaskRepo, error) {
+func (m *MongoDbRepository) GetTasks()(tasks []model.Task, err error) {
+	err = m.Db.C("tasks").Find(bson.M{}).All(&tasks)
+	return
+}
 
-	var tasksRepo []model.TaskRepo
+func (m *MongoDbRepository) GetTaskById(taskId string)(task model.Task, err error) {
+	err = m.Db.C("tasks").FindId(bson.ObjectIdHex(taskId)).One(&task)
+	return 	
+}
+
+func (m *MongoDbRepository) GetTasksByTimerId(timerId string)(tasks []model.Task, err error) {
+	err = m.Db.C("tasks").Find(bson.M{"timerId": timerId}).All(&tasks)
+	return
+}
+
+func (m *MongoDbRepository) GetTasksDoneByUserId(userId string)([]model.Task, error) {
+
+	var tasks []model.Task
 	
 	pipe := m.Db.C("tasks").Pipe([]bson.M{
 		bson.M{
@@ -60,8 +74,8 @@ func (m *MongoDbRepository) GetTasksOnTheSameDateAsUserTimers(userId string)([]m
 		},
 	})
 
-	err := pipe.All(&tasksRepo)
-	return tasksRepo, err
+	err := pipe.All(&tasks)
+	return tasks, err
 }
 
 func (m *MongoDbRepository) GetNumberOfTasksAfterDateGiven(date int64)([]model.TaskRepo, error){
@@ -88,4 +102,16 @@ func (m *MongoDbRepository) GetNumberOfTasksAfterDateGiven(date int64)([]model.T
 
 	err := pipe.All(&tasksRepo)
 	return tasksRepo, err
+}
+
+func (m *MongoDbRepository) CreateTask(task model.Task) error {
+	return m.Db.C("tasks").Insert(&task)
+}
+
+func (m *MongoDbRepository) UpdateTask(task model.Task) error {	
+	return m.Db.C("tasks").UpdateId(task.Id, task)
+}
+
+func (m *MongoDbRepository) DeleteTask(taskId string) error {
+	return m.Db.C("tasks").RemoveId(bson.ObjectIdHex(taskId))	
 }

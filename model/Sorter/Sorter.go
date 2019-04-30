@@ -5,9 +5,68 @@ import (
 	"testing"
 	"sort"
 	"math/rand"
+
+	"FirstProject/Model"
 )
 
 type Sorter struct {}
+
+
+// TASKS SORTING
+
+func (s *Sorter) SortTasksSliceByCreationDate(slice []model.Task) (sliceSorted []model.Task){
+	originalLength := len(slice)
+
+	for i := 0; i < originalLength; i++ {
+		earliestTaskCreated, positionOfEarliest := GetEarliestTask(slice)
+		sliceSorted = append(sliceSorted, earliestTaskCreated)
+		slice = DeleteTaskOfSlice(slice, positionOfEarliest) 
+	}
+	return
+}
+
+func (s *Sorter) SortTasksSliceByCreationDateDescendent(slice []model.Task)(sliceSorted []model.Task) {
+	return ReverseTasks(s.SortTasksSliceByCreationDate(slice))
+}
+
+func ReverseTasks(slice []model.Task) ([]model.Task){
+	for i, j := 0, len(slice)-1; i < j; i, j = i+1, j-1 {
+		slice[i], slice[j] = slice[j], slice[i]
+	}
+	return slice
+}
+
+func DeleteTaskOfSlice(slice []model.Task, position int) (sliceCleaned []model.Task){
+	slice[position] = slice[len(slice)-1]
+	sliceCleaned = slice[:len(slice)-1]
+	return
+}
+
+func GetEarliestTask(slice []model.Task) (earlyTask model.Task, positionOfEarliest int){
+
+	earlyTask = slice[0]
+
+	for i := 0; i < len(slice); i++ {
+		if earlyTask.CreationDate > slice[i].CreationDate {
+			earlyTask = slice[i]
+			positionOfEarliest = i
+		}
+	}
+	return
+}
+
+// func GetLatestTask(slice []model.Task) (latestTask model.Task, positionOfLatest int){
+
+// 	latestTask = slice[len(slice)-1]
+
+// 	for i := len(slice)-1; i >= 0; i-- {
+// 		if latestTask.CreationDate <= slice[i].CreationDate {
+// 			latestTask = slice[i]
+// 			positionOfLatest = i
+// 		}
+// 	}
+// 	return
+// }
 
 // INT SORTING
 

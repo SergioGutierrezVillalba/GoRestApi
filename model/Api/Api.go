@@ -74,8 +74,16 @@ func (a *Api) Start(session *mgo.Session){
 
 	// TASKS HANDLERS
 	// TODO set Middleware here
-	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(tasksController.GetTasksOnTheSameDateAsUserTimersByUserId)
+	getTasks := http.HandlerFunc(tasksController.GetTasks)
+	getTaskById := http.HandlerFunc(tasksController.GetTaskById)
+	getTasksByTimerId := http.HandlerFunc(tasksController.GetTasksByTimerId)
+	getTasksDoneByUserId := http.HandlerFunc(tasksController.GetTasksDoneByUserId)
+	getTasksDoneByUserIdSortedDescendent := http.HandlerFunc(tasksController.GetTasksDoneByUserIdSortedDescendent)
+	getTasksSortedByCreationDate := http.HandlerFunc(tasksController.GetTasksSortedByCreationDate)
 	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetNumberOfTasksAfterDateGiven)
+	createTask := http.HandlerFunc(tasksController.CreateTask)
+	updateTask := http.HandlerFunc(tasksController.UpdateTask)
+	deleteTask := http.HandlerFunc(tasksController.DeleteTask)
 	
 	// PROFILE IMAGES HANDLERS
 	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
@@ -114,9 +122,19 @@ func (a *Api) Start(session *mgo.Session){
 	r.Handle("/users/profileimg", setProfileImageToUser).Methods("PUT")
 	r.Handle("/users/profileimg/{id}", getProfileImage).Methods("GET")
 
+
 	// TASKS ROUTES
-	r.Handle("/tasks/finished/user/{id}", getTasksOnTheSameDateAsUserTimersByUserId).Methods("GET")
+	r.Handle("/tasks", getTasks).Methods("GET")
+	r.Handle("/tasks/sort/creationDate", getTasksSortedByCreationDate).Methods("GET")
+	r.Handle("/tasks/user/done/{id}/sort/creationDate", getTasksDoneByUserId).Methods("GET")
+	r.Handle("/tasks/user/done/{id}/sort/creationDate/descendent", getTasksDoneByUserIdSortedDescendent).Methods("GET")
+	r.Handle("/tasks/timer/{id}", getTasksByTimerId).Methods("GET")
 	r.Handle("/tasks/dateGiven", getTasksAfterDateGiven).Methods("GET")
+	r.Handle("/tasks/{id}", getTaskById).Methods("GET")
+	r.Handle("/tasks", createTask).Methods("POST")
+	r.Handle("/tasks", updateTask).Methods("PUT")
+	r.Handle("/tasks/{id}", deleteTask).Methods("DELETE")
+
 
 	// TIMERS ROUTES
 	r.Handle("/timers", getTimers).Methods("GET")

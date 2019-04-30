@@ -3,7 +3,7 @@ package usecase
 import (
 	repo "FirstProject/Domains/user/entity"
 	"FirstProject/Model"
-	"FirstProject/Model/validation"
+	"FirstProject/Model/Validation"
 	"FirstProject/Model/Auth"
 
 	"image"

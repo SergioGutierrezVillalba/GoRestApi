@@ -3,7 +3,7 @@ package usecase
 import (
 	repo "FirstProject/Domains/timer/entity"
 	"FirstProject/Model"
-	"FirstProject/Model/validation"
+	"FirstProject/Model/Validation"
 
 	"errors"
 	// "log"
