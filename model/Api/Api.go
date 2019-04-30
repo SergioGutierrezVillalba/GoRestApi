@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"FirstProject/Collection"
+	"FirstProject/Fixtures"
+
+	"FirstProject/Model/Sorter"
+
 	auth "FirstProject/auth"
 
 	usersController "FirstProject/Domains/user/controller"
@@ -30,6 +35,10 @@ var (
 )
 
 func (a *Api) Start(session *mgo.Session){
+
+	RefillDatabaseIfItsEmpty(session)
+	Order()
+	OrderStringSlice()
 
 	r := mux.NewRouter()
 
@@ -66,7 +75,7 @@ func (a *Api) Start(session *mgo.Session){
 	// TASKS HANDLERS
 	// TODO set Middleware here
 	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(tasksController.GetTasksOnTheSameDateAsUserTimersByUserId)
-	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetTasksAfterDateGiven)
+	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetNumberOfTasksAfterDateGiven)
 	
 	// PROFILE IMAGES HANDLERS
 	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
@@ -140,4 +149,30 @@ func StartServerAndAllowConections(r *mux.Router){
 	} else {
 		fmt.Println("Listening on port 3003....")
 	}
+}
+
+func Order(){
+	slice := []int{2,5,9,2,3}
+	SliceSorter := sorter.Sorter{}
+	sliceSorted := SliceSorter.SortIntSlice(slice, "insertion")
+
+	sliceSortedInverse := SliceSorter.InverseSortIntSlice(slice, "insertion")
+	_ = sliceSorted
+	_ = sliceSortedInverse
+	
+	log.Print(sliceSortedInverse)
+}
+
+func OrderStringSlice(){
+	slice := []string{"By", "Ay", "Dy", "Cy"}
+	SliceSorter := sorter.Sorter{}
+	sliceSorted := SliceSorter.SortStringSlice(slice)
+
+	log.Print(sliceSorted)
+}
+
+func RefillDatabaseIfItsEmpty(session *mgo.Session){
+	Collection := collection.NewCollection(session)
+	Fixture := fixture.NewFixture(Collection)
+	Fixture.LoadFixtures()
 }

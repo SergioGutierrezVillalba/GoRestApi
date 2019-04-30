@@ -1,0 +1,243 @@
+[
+    {
+        "id":"5c860d0591b3fb0c606ac83a",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser1",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac83b",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser2",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac83c",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser3",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac83d",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser4",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac83e",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser5",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac83f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser6",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac86f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser7",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac88f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser8",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac89f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser9",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac90f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser10",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac91f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser11",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac92f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser12",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac93f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser13",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac94f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser14",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac01f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser15",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac02f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser16",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac03f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser17",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac04f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser18",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac05f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser19",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac06f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser20",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac07f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser21",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac08f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser22",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac09f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser23",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac10f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser24",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac11f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser25",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac12f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser26",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac13f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser27",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac14f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser28",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac15f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser29",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    },
+
+    {
+        "id":"5c860d0591b3fb0c606ac16f",
+        "password":"$2a$10$K0UGiEXeg41tF0qAryfpaOWYwnCLGkCe.r/PHnZl0ESA45mX69Kr6",
+        "username":"fixtureuser30",
+        "role": "admin",
+        "email":"gv.sergio@gmail.com"
+    }
+
+]
+
