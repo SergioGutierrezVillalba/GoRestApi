@@ -72,10 +72,19 @@ func (a *Api) Start(session *mgo.Session){
 	sendRecover := http.HandlerFunc(usersController.SendRecover)
 	resetPassword := http.HandlerFunc(usersController.ResetPassword)
 
+
 	// TASKS HANDLERS
-	// TODO set Middleware here
-	getTasksOnTheSameDateAsUserTimersByUserId := http.HandlerFunc(tasksController.GetTasksOnTheSameDateAsUserTimersByUserId)
-	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetNumberOfTasksAfterDateGiven)
+	getTasks := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasks), session, "GetTasks")
+	getTaskById := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTaskById), session, "GetTaskById")
+	getTasksByTimerId := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksByTimerId), session, "GetTasksByTimerId")
+	getTasksDoneByUserId := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksDoneByUserId), session, "GetTasksDoneByUserId")
+	getTasksDoneByUserIdSortedDescendent := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksDoneByUserIdSortedDescendent), session, "GetTasksDoneByUserIdSortedDescendent")
+	getTasksSortedByCreationDate := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksSortedByCreationDate), session, "GetTasksSortedByCreationDate")
+	getTasksAfterDateGiven := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetNumberOfTasksAfterDateGiven), session, "GetTasksAfterDateGiven")
+	createTask := gAuthToken.Middleware(http.HandlerFunc(tasksController.CreateTask), session, "CreateTask")
+	updateTask := gAuthToken.Middleware(http.HandlerFunc(tasksController.UpdateTask), session, "UpdateTask")
+	deleteTask := gAuthToken.Middleware(http.HandlerFunc(tasksController.DeleteTask), session, "DeleteTask")
+	
 	
 	// PROFILE IMAGES HANDLERS
 	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
@@ -114,9 +123,19 @@ func (a *Api) Start(session *mgo.Session){
 	r.Handle("/users/profileimg", setProfileImageToUser).Methods("PUT")
 	r.Handle("/users/profileimg/{id}", getProfileImage).Methods("GET")
 
+
 	// TASKS ROUTES
-	r.Handle("/tasks/finished/user/{id}", getTasksOnTheSameDateAsUserTimersByUserId).Methods("GET")
-	r.Handle("/tasks/dateGiven", getTasksAfterDateGiven).Methods("GET")
+	r.Handle("/tasks", getTasks).Methods("GET")
+	r.Handle("/tasks/sort/creationDate", getTasksSortedByCreationDate).Methods("GET")
+	r.Handle("/tasks/user/done/{id}/sort/creationDate", getTasksDoneByUserId).Methods("GET")
+	r.Handle("/tasks/user/done/{id}/sort/creationDate/descendent", getTasksDoneByUserIdSortedDescendent).Methods("GET")
+	r.Handle("/tasks/timer/{id}", getTasksByTimerId).Methods("GET")
+	r.Handle("/tasks/{id}", getTaskById).Methods("GET")
+	r.Handle("/tasks/dateGiven/{date}", getTasksAfterDateGiven).Methods("GET")
+	r.Handle("/tasks", createTask).Methods("POST")
+	r.Handle("/tasks", updateTask).Methods("PUT")
+	r.Handle("/tasks/{id}", deleteTask).Methods("DELETE")
+
 
 	// TIMERS ROUTES
 	r.Handle("/timers", getTimers).Methods("GET")

@@ -5,6 +5,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"FirstProject/Model"
+	"log"
 )
 
 type MongoDbRepository struct{
@@ -30,11 +31,12 @@ func (m *MongoDbRepository) GetById(timerId string) (timer model.Timer, err erro
 }
 
 func (m *MongoDbRepository) GetAllByUserId(userId string) (timers []model.Timer, err error){
-	err = m.Db.C("times").Find(bson.M{"userId": userId}).All(&timers)
+	err = m.Db.C("times").Find(bson.M{"userId": bson.ObjectIdHex(userId)}).All(&timers)
 	return
 }
 
 func (m *MongoDbRepository) Create(timer model.Timer) error{
+	log.Print(timer)
 	return m.Db.C("times").Insert(&timer)
 }
 

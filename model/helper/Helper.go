@@ -3,6 +3,7 @@ package helper
 import (
 	"net/http"
 	"strings"
+	"strconv"
 	"errors"
 	"time"
 	"fmt"
@@ -108,6 +109,20 @@ func (h *Helper) FormatTimersForResponse(timers [] model.Timer) (timersFormatted
 func (h *Helper) GetIdFromUrl(request *http.Request) (id string) {
 	vars := mux.Vars(request)
 	id = vars["id"]
+	return
+}
+
+func (h *Helper) GetDateFromUrl(request *http.Request) (date int64) {
+	vars := mux.Vars(request)
+	dateStringed := vars["date"]
+	
+	n, err := strconv.ParseInt(dateStringed, 10, 64)
+
+	if err != nil {
+		return
+	}
+
+	date = n
 	return
 }
 

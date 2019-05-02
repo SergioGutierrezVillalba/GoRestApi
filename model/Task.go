@@ -6,9 +6,9 @@ import (
 
 type Task struct {
 	Id 		 		bson.ObjectId   `json:"id,omitempty" bson:"_id"`
-	TimerId			bson.ObjectId	`json:"timerId" bson:"timerId"`
-	Content			string			`json:"content"	bson:"content"`
-	CreationDate	int64			`json:"creationDate" bson:"creationDate"`
+	TimerId			bson.ObjectId	`json:"timerId,omitempty" bson:"timerId"`
+	Content			string			`json:"content,omitempty" bson:"content"`
+	CreationDate	int64			`json:"creationDate,omitempty" bson:"creationDate"`
 }
 
 type TaskRepo struct {

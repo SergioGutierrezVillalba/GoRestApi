@@ -3,7 +3,7 @@ package usecase
 import (
 	repo "FirstProject/Domains/timer/entity"
 	"FirstProject/Model"
-	"FirstProject/Model/validation"
+	"FirstProject/Model/Validation"
 
 	"errors"
 	// "log"
@@ -61,7 +61,7 @@ func (t *TimerUsecase) GetAllByUserId(userId string)(timers [] model.Timer, err 
 func (t *TimerUsecase) Create(timer model.Timer) error {
 
 	var fieldsRequired []string
-	fieldsRequired = append(fieldsRequired, timer.UserId)
+	fieldsRequired = append(fieldsRequired, timer.UserId.Hex())
 
 	if !Checker.HasFieldsRequired(fieldsRequired) {
 		return errors.New("EmptyFieldsError")
@@ -76,7 +76,7 @@ func (t *TimerUsecase) Create(timer model.Timer) error {
 }
 func (t *TimerUsecase) Update(timer model.Timer) error {
 	var fieldsRequired []string
-	fieldsRequired = append(fieldsRequired, timer.UserId)
+	fieldsRequired = append(fieldsRequired, timer.UserId.Hex())
 
 	if !Checker.HasFieldsRequired(fieldsRequired) {
 		return errors.New("EmptyFieldsError")
