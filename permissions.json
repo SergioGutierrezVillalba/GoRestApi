@@ -15,5 +15,15 @@
     "UpdateTimer": ["ADMIN"],
     "DeleteTimer": ["ADMIN"],
     "StartTimer": ["SELF","ADMIN"],
-    "FinishTimer": ["SELF","ADMIN"]
+    "FinishTimer": ["SELF","ADMIN"],
+    "GetTasks": ["ADMIN"],
+    "GetTaskById": ["SELF","ADMIN"],
+    "GetTasksByTimerId": ["SELF","ADMIN"],
+    "GetTasksDoneByUserId": ["SELF","ADMIN"],
+    "GetTasksDoneByUserIdSortedDescendent": ["SELF","ADMIN"],
+    "GetTasksSortedByCreationDate": ["SELF","ADMIN"],
+    "GetTasksAfterDateGiven": ["SELF","ADMIN"],
+    "CreateTask": ["SELF","ADMIN"],
+    "UpdateTask": ["SELF","ADMIN"],
+    "DeleteTask": ["SELF","ADMIN"]
 }

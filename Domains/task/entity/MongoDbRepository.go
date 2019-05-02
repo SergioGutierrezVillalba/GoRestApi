@@ -29,7 +29,7 @@ func (m *MongoDbRepository) GetTaskById(taskId string)(task model.Task, err erro
 }
 
 func (m *MongoDbRepository) GetTasksByTimerId(timerId string)(tasks []model.Task, err error) {
-	err = m.Db.C("tasks").Find(bson.M{"timerId": timerId}).All(&tasks)
+	err = m.Db.C("tasks").Find(bson.M{"timerId": bson.ObjectIdHex(timerId)}).All(&tasks)
 	return
 }
 

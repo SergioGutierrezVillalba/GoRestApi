@@ -548,7 +548,7 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 	userRequesting := u.GetUserRequesting()
 	fmt.Println("(FinishTimer): Id user wants stop: " + timerDb.UserId)
 
-	roleUsed := Helper.WhichRoleIsUsed(userRequesting, model.User{Id: bson.ObjectIdHex(timerDb.UserId)})
+	roleUsed := Helper.WhichRoleIsUsed(userRequesting, model.User{Id: timerDb.UserId})
 	switch roleUsed {
 		case "NOAUTH":
 			respond.WithError(w, http.StatusBadRequest, "Unauthorized")
@@ -564,7 +564,7 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	userOwnerOfTimer, _ := u.UsersUsecase.GetById(timerDb.UserId)
+	userOwnerOfTimer, _ := u.UsersUsecase.GetById(timerDb.UserId.Hex())
 
 	if userOwnerOfTimer.HasGroup(){
 		SendFinishNotificationToTheGroup(userOwnerOfTimer)
@@ -643,7 +643,7 @@ func CleanUserPasswordAndJWT(userPointer *model.User){
 
 func CreateTimerStruct(userOwner model.User) (timer model.Timer) {
 	timer.Id = bson.NewObjectId()
-	timer.UserId = userOwner.GetId()
+	timer.UserId = userOwner.Id
 	timer.Start = time.Now().Unix()
 	return
 }

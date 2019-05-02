@@ -72,18 +72,19 @@ func (a *Api) Start(session *mgo.Session){
 	sendRecover := http.HandlerFunc(usersController.SendRecover)
 	resetPassword := http.HandlerFunc(usersController.ResetPassword)
 
+
 	// TASKS HANDLERS
-	// TODO set Middleware here
-	getTasks := http.HandlerFunc(tasksController.GetTasks)
-	getTaskById := http.HandlerFunc(tasksController.GetTaskById)
-	getTasksByTimerId := http.HandlerFunc(tasksController.GetTasksByTimerId)
-	getTasksDoneByUserId := http.HandlerFunc(tasksController.GetTasksDoneByUserId)
-	getTasksDoneByUserIdSortedDescendent := http.HandlerFunc(tasksController.GetTasksDoneByUserIdSortedDescendent)
-	getTasksSortedByCreationDate := http.HandlerFunc(tasksController.GetTasksSortedByCreationDate)
-	getTasksAfterDateGiven := http.HandlerFunc(tasksController.GetNumberOfTasksAfterDateGiven)
-	createTask := http.HandlerFunc(tasksController.CreateTask)
-	updateTask := http.HandlerFunc(tasksController.UpdateTask)
-	deleteTask := http.HandlerFunc(tasksController.DeleteTask)
+	getTasks := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasks), session, "GetTasks")
+	getTaskById := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTaskById), session, "GetTaskById")
+	getTasksByTimerId := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksByTimerId), session, "GetTasksByTimerId")
+	getTasksDoneByUserId := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksDoneByUserId), session, "GetTasksDoneByUserId")
+	getTasksDoneByUserIdSortedDescendent := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksDoneByUserIdSortedDescendent), session, "GetTasksDoneByUserIdSortedDescendent")
+	getTasksSortedByCreationDate := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetTasksSortedByCreationDate), session, "GetTasksSortedByCreationDate")
+	getTasksAfterDateGiven := gAuthToken.Middleware(http.HandlerFunc(tasksController.GetNumberOfTasksAfterDateGiven), session, "GetTasksAfterDateGiven")
+	createTask := gAuthToken.Middleware(http.HandlerFunc(tasksController.CreateTask), session, "CreateTask")
+	updateTask := gAuthToken.Middleware(http.HandlerFunc(tasksController.UpdateTask), session, "UpdateTask")
+	deleteTask := gAuthToken.Middleware(http.HandlerFunc(tasksController.DeleteTask), session, "DeleteTask")
+	
 	
 	// PROFILE IMAGES HANDLERS
 	getProfileImage := gAuthToken.Middleware(http.HandlerFunc(usersController.GetProfileImage), session, "GetProfileImage")
@@ -129,8 +130,8 @@ func (a *Api) Start(session *mgo.Session){
 	r.Handle("/tasks/user/done/{id}/sort/creationDate", getTasksDoneByUserId).Methods("GET")
 	r.Handle("/tasks/user/done/{id}/sort/creationDate/descendent", getTasksDoneByUserIdSortedDescendent).Methods("GET")
 	r.Handle("/tasks/timer/{id}", getTasksByTimerId).Methods("GET")
-	r.Handle("/tasks/dateGiven", getTasksAfterDateGiven).Methods("GET")
 	r.Handle("/tasks/{id}", getTaskById).Methods("GET")
+	r.Handle("/tasks/dateGiven/{date}", getTasksAfterDateGiven).Methods("GET")
 	r.Handle("/tasks", createTask).Methods("POST")
 	r.Handle("/tasks", updateTask).Methods("PUT")
 	r.Handle("/tasks/{id}", deleteTask).Methods("DELETE")

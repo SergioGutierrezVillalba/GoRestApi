@@ -2,8 +2,10 @@ package controller
 
 import (
 	tasksUsecase "FirstProject/Domains/task/usecase"
+	usersUsecase "FirstProject/Domains/user/usecase"
 
 	"FirstProject/Model"
+	"FirstProject/Model/Auth"
 	"FirstProject/Model/helper"
 	"FirstProject/Model/Sorter"
 	
@@ -32,12 +34,19 @@ type Controller interface{
 
 var (
 	Sorter			sorter.Sorter
+
 	respond 		model.Responser
+
 	Helper			helper.Helper
+
+	jwtSent			string
+
+	authenticator 	auth.Authentication
 )
 
 type TasksController struct {
 	TasksUsecase		tasksUsecase.Usecase
+	UsersUsecase		usersUsecase.Usecase
 }
 
 func NewController(t tasksUsecase.Usecase) Controller {
@@ -128,8 +137,8 @@ func (t *TasksController) GetTasksDoneByUserIdSortedDescendent(w http.ResponseWr
 }
 
 func (t *TasksController) GetNumberOfTasksAfterDateGiven(w http.ResponseWriter, r *http.Request) {
-	var date int64
-	date = 1555338589 // lunes, 15 de abril de 2019 16:29:49 GMT+02:00
+
+	date := GetDateFromUrl(r)
 	tasks, err := t.TasksUsecase.GetNumberOfTasksAfterDateGiven(date)
 
 	if ActionGivesError(err){
@@ -190,8 +199,17 @@ func GetIdFromUrl(r *http.Request) (id string) {
 	return
 }
 
+func GetDateFromUrl(r *http.Request) (date int64) {
+	date = Helper.GetDateFromUrl(r)
+	return
+}
+
 func GetDataFromBodyJSONRequest(r *http.Request, dataSaver interface{}){
 	json.NewDecoder(r.Body).Decode(dataSaver)
+}
+
+func GetDataFromHeaderRequest(r *http.Request){
+	jwtSent, _ = Helper.GetJWTFromHeaderRequest(r)
 }
 
 func ActionGivesError(e error) bool {

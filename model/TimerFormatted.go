@@ -5,9 +5,9 @@ import (
 )
 
 type TimerFormatted struct{
-	Id 		 	bson.ObjectId `bson:"_id"      json:"id,omitempty"`
-	UserId	 	string  	  `bson:"userId"   json:"userId"`
-	Start	 	string        `bson:"start"	   json:"start"`
-	Finish 	 	string        `bson:"finish"   json:"finish"`
+	Id 		 	bson.ObjectId `bson:"_id" json:"id,omitempty"`
+	UserId	 	bson.ObjectId `bson:"userId" json:"userId"`
+	Start	 	string        `bson:"start" json:"start"`
+	Finish 	 	string        `bson:"finish" json:"finish"`
 	Duration    int64	      `bson:"duration" json:"duration"`
 }
