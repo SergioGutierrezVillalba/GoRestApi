@@ -138,7 +138,14 @@ func (u *UsersController) FinishWebSocket(w http.ResponseWriter, r *http.Request
 
 // USERS CONTEXT
 
-// GetAllUsers - Return all users
+// swagger:route GET /users users
+// Returns all users from Database.
+// If there is an error with query, 400 code is returned
+// responses:
+//  200: getAllUsersResp
+//  400: badQueryReq
+//  404: badReq
+//  500: internal
 func (u *UsersController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := u.UsersUsecase.GetAll()
@@ -151,6 +158,14 @@ func (u *UsersController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, users)
 }
 
+// swagger:route GET /user users
+// Returns user by sending JWT
+// If there is an error with query, 400 code is returned
+// responses:
+//  200: getUserByJwtResp
+//  400: dbError
+//  404: badReq
+//  500: internal
 func (u *UsersController) GetUserByJwt(w http.ResponseWriter, r *http.Request) {
 
 	GetDataFromHeaderRequest(r)
@@ -164,6 +179,21 @@ func (u *UsersController) GetUserByJwt(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, user)
 }
 
+// swagger:operation GET /users/{id} users
+// ---
+// summary: Get User by given Id
+// description: if user id is not send correctly 400 code is returned
+// parameters:
+// - name: id
+//   in: path
+//   description: id of user
+//   type: string
+//   required: true
+// responses:
+//  "200": getUserByJwtResp
+//  "400": dbError
+//  "404": badReq
+//  "500": internal
 func (u *UsersController) GetUserById(w http.ResponseWriter, r *http.Request) {
 
 	userId := GetIdFromUrl(r)

@@ -1,0 +1,63 @@
+{
+  "swagger": "2.0",
+  "paths": {
+    "/user": {
+      "get": {
+        "description": "Returns user by sending JWT\nIf there is an error with query, 400 code is returned",
+        "operationId": "users",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/getUserByJwtResp"
+          },
+          "400": {
+            "$ref": "#/responses/dbError"
+          },
+          "404": {
+            "$ref": "#/responses/badReq"
+          },
+          "500": {
+            "$ref": "#/responses/internal"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "description": "If there is an error with query, 400 code is returned",
+        "summary": "Returns all users from Database.",
+        "operationId": "users",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/getAllUsersResp"
+          },
+          "400": {
+            "$ref": "#/responses/badQueryReq"
+          },
+          "404": {
+            "$ref": "#/responses/badReq"
+          },
+          "500": {
+            "$ref": "#/responses/internal"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "description": "if user id is not send correctly 400 code is returned",
+        "summary": "Get User by given Id",
+        "operationId": "users",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "id of user",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {}
+      }
+    }
+  }
+}

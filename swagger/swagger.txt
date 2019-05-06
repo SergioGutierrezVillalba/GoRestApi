@@ -1,7 +1,0 @@
-swagger guide:
-	- https://goswagger.io/tutorial/todo-list.html
-
-some tutorial:
-	- https://www.ribice.ba/swagger-golang/
-
-learn yml internal working better
