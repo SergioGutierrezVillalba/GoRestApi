@@ -138,14 +138,14 @@ func (u *UsersController) FinishWebSocket(w http.ResponseWriter, r *http.Request
 
 // USERS CONTEXT
 
-// swagger:route GET /users users
+// swagger:route GET /users users getUsersReq
 // Returns all users from Database.
-// If there is an error with query, 400 code is returned
+// Requires Auth (JWT)
 // responses:
-//  200: getAllUsersResp
-//  400: badQueryReq
-//  404: badReq
-//  500: internal
+//   200: getAllUsersResp
+//   400: queryErrResp
+//   404: notFound
+//   500: internalErr
 func (u *UsersController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := u.UsersUsecase.GetAll()
@@ -158,14 +158,24 @@ func (u *UsersController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, users)
 }
 
-// swagger:route GET /user users
-// Returns user by sending JWT
-// If there is an error with query, 400 code is returned
+// Array of users
+// swagger:response getAllUsersResp
+type swaggGetAllUsersResp struct {
+	// in:body
+	Body struct {
+		// Users array
+		Users []model.User `json:"users"`
+	}
+}
+
+// swagger:route GET /user users getUserByJwtReq
+// Returns user by JWT sent.
+// Requires Auth (JWT)
 // responses:
-//  200: getUserByJwtResp
-//  400: dbError
-//  404: badReq
-//  500: internal
+//  200: getUserResp
+//  400: queryErrResp
+//  404: notFound
+//  500: internalErr
 func (u *UsersController) GetUserByJwt(w http.ResponseWriter, r *http.Request) {
 
 	GetDataFromHeaderRequest(r)
@@ -179,21 +189,31 @@ func (u *UsersController) GetUserByJwt(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, user)
 }
 
-// swagger:operation GET /users/{id} users
+// User requested
+// swagger:response getUserResp
+type swaggGetUserResp struct {
+	// in:body
+	Body struct {
+		// User model
+		User model.User `json:"user"`
+	}
+}
+
+// swagger:operation GET /users/{id} users getUserByIdReq
 // ---
-// summary: Get User by given Id
+// summary: Returns an user by Id sent
 // description: if user id is not send correctly 400 code is returned
 // parameters:
 // - name: id
 //   in: path
-//   description: id of user
+//   description: id of a user
 //   type: string
 //   required: true
 // responses:
-//  "200": getUserByJwtResp
-//  "400": dbError
-//  "404": badReq
-//  "500": internal
+//  200: getUserResp
+//  400: queryErrResp
+//  404: notFound
+//  500: internalErr
 func (u *UsersController) GetUserById(w http.ResponseWriter, r *http.Request) {
 
 	userId := GetIdFromUrl(r)
@@ -207,6 +227,14 @@ func (u *UsersController) GetUserById(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, user)
 }
 
+// swagger:route POST /users users createUserReq
+// Creates a user.
+// Creates a user with the given JSON body
+// responses:
+//  200: createUserResp
+//  400: queryErrResp
+//  404: notFound
+//  500: internalErr
 func (u *UsersController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var user model.User
@@ -225,6 +253,24 @@ func (u *UsersController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, user)
 }
 
+// Code response
+// swagger:response createUserResp
+type swaggCreateUserResp struct {
+	// in:body
+	Body struct {
+		// HTTP 200 status code
+		Code int `json:"code"`
+	}
+}
+
+// swagger:response PUT /users users updateUserReq
+// Updates a user
+// Updates a user with JSON given and returns updated JWT.
+// responses:
+//  200: updateUserResp
+//  400: queryErrResp
+//  404: notFound
+//  500: internalErr
 func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	var userToUpdate model.User
@@ -255,8 +301,24 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token: userToUpdate.Jwt})
 }
 
-// TODO switch can be replaced to not doing it
-// twice each time I try to check the userRole?
+// JWT updated
+// swagger:response updateUserResp
+type swaggUpdateUserResp struct {
+	// in:body
+	Body struct {
+		// New updated JWT
+		Jwt string `json:"jwt"`
+	}
+}
+
+// swagger:response PUT /users/nopwd users updateUserWithoutPwdReq
+// Updates a user without updating password
+// Updates a user with JSON given without changing password
+// responses:
+//  200: updateUserResp
+//  400: queryErrResp
+//  404: notFound
+//  500: internalErr
 func (u *UsersController) UpdateUserWithoutUpdatingPassword(w http.ResponseWriter, r *http.Request) {
 
 	var userToUpdate model.User
@@ -685,4 +747,34 @@ func PrepareUserForUpdate(userPointer *model.User, newPassword string) {
 
 func CleanSlashesFromToken(token string) string {
 	return Helper.CleanSlashesFromToken(token)
+}
+
+// HTTP status code 400 response
+// swagger:response queryErrResp
+type swaggQueryErrResp struct {
+	// in:body
+	Body struct {
+		// Got error
+		Error error `json:"error"`
+	}
+}
+
+// HTTP status code 404 response
+// swagger:response notFound
+type swaggNotFound struct {
+	// in:body
+	Body struct {
+		// Got error
+		Error error `json:"error"`
+	}
+}
+
+// HTTP status code 500 response
+// swagger:response internalErr
+type swaggInternalErr struct {
+	// in:body
+	Body struct {
+		// Got error
+		Error error `json:"error"`
+	}
 }

@@ -10,17 +10,35 @@ import model "FirstProject/Model"
 // // swagger:parameters getAllUsersReq
 // type swaggerGetAllUsersReq struct {
 // 	// in:body
-// 	Body swaggerAPI
+// 	Body model.User
 // }
 
-// HTTP status code 200 and array of users in data
+// Array with all users
 // swagger:response getAllUsersResp
 type swaggGetAllUsersResp struct {
 	// in:body
 	Body struct {
-		// HTTP status code 200/201
-		Code int `json:"code"`
-		// Repository model
+		// User model
 		Users []model.User `json:"data"`
+	}
+}
+
+// HTTP status code 400 response
+// swagger:response queryErrResp
+type swaggQueryErrResp struct {
+	// in:body
+	Body struct {
+		// HTTP status code 400
+		Code int `json:"code"`
+	}
+}
+
+// HTTP status code 404 response
+// swagger:response notFound
+type swaggNotFound struct {
+	// in:body
+	Body struct {
+		// HTTP status code 400
+		Code int `json:"code"`
 	}
 }

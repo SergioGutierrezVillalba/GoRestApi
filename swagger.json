@@ -1,43 +1,73 @@
 {
   "swagger": "2.0",
+  "info": {},
   "paths": {
     "/user": {
       "get": {
-        "description": "Returns user by sending JWT\nIf there is an error with query, 400 code is returned",
-        "operationId": "users",
+        "description": "Requires Auth (JWT)",
+        "tags": [
+          "users"
+        ],
+        "summary": "Returns user by JWT sent.",
+        "operationId": "getUserByJwtReq",
         "responses": {
           "200": {
-            "$ref": "#/responses/getUserByJwtResp"
+            "$ref": "#/responses/getUserResp"
           },
           "400": {
-            "$ref": "#/responses/dbError"
+            "$ref": "#/responses/queryErrResp"
           },
           "404": {
-            "$ref": "#/responses/badReq"
+            "$ref": "#/responses/notFound"
           },
           "500": {
-            "$ref": "#/responses/internal"
+            "$ref": "#/responses/internalErr"
           }
         }
       }
     },
     "/users": {
       "get": {
-        "description": "If there is an error with query, 400 code is returned",
+        "description": "Requires Auth (JWT)",
+        "tags": [
+          "users"
+        ],
         "summary": "Returns all users from Database.",
-        "operationId": "users",
+        "operationId": "getUsersReq",
         "responses": {
           "200": {
             "$ref": "#/responses/getAllUsersResp"
           },
           "400": {
-            "$ref": "#/responses/badQueryReq"
+            "$ref": "#/responses/queryErrResp"
           },
           "404": {
-            "$ref": "#/responses/badReq"
+            "$ref": "#/responses/notFound"
           },
           "500": {
-            "$ref": "#/responses/internal"
+            "$ref": "#/responses/internalErr"
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a user with the given JSON body",
+        "tags": [
+          "users"
+        ],
+        "summary": "Creates a user.",
+        "operationId": "createUserReq",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/createUserResp"
+          },
+          "400": {
+            "$ref": "#/responses/queryErrResp"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "500": {
+            "$ref": "#/responses/internalErr"
           }
         }
       }
@@ -45,18 +75,173 @@
     "/users/{id}": {
       "get": {
         "description": "if user id is not send correctly 400 code is returned",
-        "summary": "Get User by given Id",
-        "operationId": "users",
+        "tags": [
+          "users"
+        ],
+        "summary": "Returns an user by Id sent",
+        "operationId": "getUserByIdReq",
         "parameters": [
           {
             "type": "string",
-            "description": "id of user",
+            "description": "id of a user",
             "name": "id",
             "in": "path",
             "required": true
           }
         ],
         "responses": {}
+      }
+    }
+  },
+  "definitions": {
+    "ObjectId": {
+      "description": "http://www.mongodb.org/display/DOCS/Object+IDs",
+      "type": "string",
+      "title": "ObjectId is a unique ID identifying a BSON value. It must be exactly 12 bytes\nlong. MongoDB objects by default have such a property set in their \"_id\"\nproperty.",
+      "x-go-package": "gopkg.in/mgo.v2/bson"
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "x-go-name": "Email"
+        },
+        "groupId": {
+          "type": "string",
+          "x-go-name": "GroupId"
+        },
+        "id": {
+          "$ref": "#/definitions/ObjectId"
+        },
+        "jwt": {
+          "type": "string",
+          "x-go-name": "Jwt"
+        },
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        },
+        "profileImage": {
+          "type": "string",
+          "x-go-name": "ProfileImage"
+        },
+        "raw": {
+          "type": "string",
+          "x-go-name": "RawId"
+        },
+        "role": {
+          "type": "string",
+          "x-go-name": "Role"
+        },
+        "routeimg": {
+          "type": "string",
+          "x-go-name": "RouteImg"
+        },
+        "token": {
+          "type": "string",
+          "x-go-name": "Token"
+        },
+        "username": {
+          "type": "string",
+          "x-go-name": "Username"
+        }
+      },
+      "x-go-package": "FirstProject/Model"
+    }
+  },
+  "responses": {
+    "createUserResp": {
+      "description": "Code response",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "HTTP 200 status code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code"
+          }
+        }
+      }
+    },
+    "getAllUsersResp": {
+      "description": "Array of users",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "description": "Users array",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/User"
+            },
+            "x-go-name": "Users"
+          }
+        }
+      }
+    },
+    "getUserResp": {
+      "description": "User requested",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/definitions/User"
+          }
+        }
+      }
+    },
+    "internalErr": {
+      "description": "HTTP status code 500 response",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "description": "Got error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "notFound": {
+      "description": "HTTP status code 404 response",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "description": "Got error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "queryErrResp": {
+      "description": "HTTP status code 400 response",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "description": "Got error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "updateUserResp": {
+      "description": "JWT updated",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "jwt": {
+            "description": "New updated JWT",
+            "type": "string",
+            "x-go-name": "Jwt"
+          }
+        }
       }
     }
   }
