@@ -9,19 +9,19 @@
           "users"
         ],
         "summary": "Returns user by JWT sent.",
-        "operationId": "getUserByJwtReq",
+        "operationId": "getUserByJwt",
         "responses": {
           "200": {
-            "$ref": "#/responses/getUserResp"
+            "description": "getUserResp",
+            "schema": {
+              "$ref": "#/definitions/getUserResp"
+            }
           },
           "400": {
-            "$ref": "#/responses/queryErrResp"
-          },
-          "404": {
-            "$ref": "#/responses/notFound"
-          },
-          "500": {
-            "$ref": "#/responses/internalErr"
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
           }
         }
       }
@@ -33,41 +33,182 @@
           "users"
         ],
         "summary": "Returns all users from Database.",
-        "operationId": "getUsersReq",
+        "operationId": "getAllUsers",
         "responses": {
           "200": {
-            "$ref": "#/responses/getAllUsersResp"
+            "description": "getAllUsersResp",
+            "schema": {
+              "$ref": "#/definitions/getAllUsersResp"
+            }
           },
           "400": {
-            "$ref": "#/responses/queryErrResp"
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
+          }
+        }
+      },
+      "put": {
+        "description": "Updates a user with JSON given and returns updated JWT.",
+        "tags": [
+          "users"
+        ],
+        "summary": "Updates a user.",
+        "operationId": "updateUser",
+        "responses": {
+          "200": {
+            "description": "updateUserResp",
+            "schema": {
+              "$ref": "#/definitions/updateUserResp"
+            }
           },
-          "404": {
-            "$ref": "#/responses/notFound"
-          },
-          "500": {
-            "$ref": "#/responses/internalErr"
+          "400": {
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
           }
         }
       },
       "post": {
-        "description": "Creates a user with the given JSON body",
         "tags": [
           "users"
         ],
         "summary": "Creates a user.",
-        "operationId": "createUserReq",
+        "operationId": "createUser",
         "responses": {
           "200": {
-            "$ref": "#/responses/createUserResp"
+            "description": "genericSuccessResp",
+            "schema": {
+              "$ref": "#/definitions/genericSuccessResp"
+            }
           },
           "400": {
-            "$ref": "#/responses/queryErrResp"
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
+          }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "description": "Checks data sent for login and returns jwt if successful",
+        "tags": [
+          "validation"
+        ],
+        "summary": "Login.",
+        "operationId": "login",
+        "responses": {
+          "200": {
+            "description": "loginResp",
+            "schema": {
+              "$ref": "#/definitions/loginResp"
+            }
           },
-          "404": {
-            "$ref": "#/responses/notFound"
+          "400": {
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
+          }
+        }
+      }
+    },
+    "/users/nopwd": {
+      "put": {
+        "description": "Updates a user with JSON given without changing password",
+        "tags": [
+          "users"
+        ],
+        "summary": "Updates a user without updating password.",
+        "operationId": "updateUserWithoutPwd",
+        "responses": {
+          "200": {
+            "description": "updateUserResp",
+            "schema": {
+              "$ref": "#/definitions/updateUserResp"
+            }
           },
-          "500": {
-            "$ref": "#/responses/internalErr"
+          "400": {
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
+          }
+        }
+      }
+    },
+    "/users/register": {
+      "post": {
+        "description": "Allows register for new users",
+        "tags": [
+          "validation"
+        ],
+        "summary": "Register.",
+        "operationId": "register",
+        "responses": {
+          "200": {
+            "description": "genericSuccessResp",
+            "schema": {
+              "$ref": "#/definitions/genericSuccessResp"
+            }
+          },
+          "400": {
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
+          }
+        }
+      }
+    },
+    "/users/reset": {
+      "patch": {
+        "description": "Change password with recover token given.",
+        "tags": [
+          "validation"
+        ],
+        "summary": "Change password.",
+        "operationId": "resetPassword",
+        "responses": {
+          "200": {
+            "description": "genericSuccessResp",
+            "schema": {
+              "$ref": "#/definitions/genericSuccessResp"
+            }
+          },
+          "400": {
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
+          }
+        }
+      }
+    },
+    "/users/sendrecover": {
+      "post": {
+        "description": "Sends an mail to user's email related to with an url to recover password",
+        "tags": [
+          "validation"
+        ],
+        "summary": "Allows way to recover password when user has forgotten it.",
+        "operationId": "sendRecover",
+        "responses": {
+          "200": {
+            "description": "genericSuccessResp",
+            "schema": {
+              "$ref": "#/definitions/genericSuccessResp"
+            }
+          },
+          "400": {
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
           }
         }
       }
@@ -79,7 +220,7 @@
           "users"
         ],
         "summary": "Returns an user by Id sent",
-        "operationId": "getUserByIdReq",
+        "operationId": "getUserById",
         "parameters": [
           {
             "type": "string",
@@ -90,6 +231,28 @@
           }
         ],
         "responses": {}
+      },
+      "delete": {
+        "description": "Deletes a user with given Id via url",
+        "tags": [
+          "users"
+        ],
+        "summary": "Delete a user with given Id.",
+        "operationId": "deleteUser",
+        "responses": {
+          "200": {
+            "description": "genericSuccessResp",
+            "schema": {
+              "$ref": "#/definitions/genericSuccessResp"
+            }
+          },
+          "400": {
+            "description": "queryErrResp",
+            "schema": {
+              "$ref": "#/definitions/queryErrResp"
+            }
+          }
+        }
       }
     }
   },
@@ -148,101 +311,111 @@
         }
       },
       "x-go-package": "FirstProject/Model"
-    }
-  },
-  "responses": {
-    "createUserResp": {
-      "description": "Code response",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "description": "HTTP 200 status code",
-            "type": "integer",
-            "format": "int64",
-            "x-go-name": "Code"
-          }
+    },
+    "genericSuccessResp": {
+      "description": "HTTP status code 200 message response",
+      "type": "object",
+      "properties": {
+        "response": {
+          "description": "in:body",
+          "type": "string",
+          "x-go-name": "Response"
         }
-      }
+      },
+      "x-go-name": "GenericSuccessResp",
+      "x-go-package": "FirstProject/Swagger"
     },
     "getAllUsersResp": {
-      "description": "Array of users",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "users": {
-            "description": "Users array",
-            "type": "array",
-            "items": {
-              "$ref": "#/definitions/User"
-            },
-            "x-go-name": "Users"
-          }
+      "description": "Users requested",
+      "type": "object",
+      "properties": {
+        "users": {
+          "description": "in:body",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/User"
+          },
+          "x-go-name": "Users"
         }
-      }
+      },
+      "x-go-name": "GetAllUsersResp",
+      "x-go-package": "FirstProject/Swagger"
     },
     "getUserResp": {
       "description": "User requested",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "user": {
-            "$ref": "#/definitions/User"
-          }
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/User"
         }
-      }
+      },
+      "x-go-name": "GetUserResp",
+      "x-go-package": "FirstProject/Swagger"
     },
     "internalErr": {
       "description": "HTTP status code 500 response",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "description": "Got error",
-            "type": "string",
-            "x-go-name": "Error"
-          }
+      "type": "object",
+      "properties": {
+        "error": {
+          "description": "in:body",
+          "type": "string",
+          "x-go-name": "Error"
         }
-      }
+      },
+      "x-go-name": "GenericInternalErr",
+      "x-go-package": "FirstProject/Swagger"
+    },
+    "loginResp": {
+      "description": "User's JWT",
+      "type": "object",
+      "properties": {
+        "jwt": {
+          "description": "in:body",
+          "type": "string",
+          "x-go-name": "Jwt"
+        }
+      },
+      "x-go-name": "LoginResp",
+      "x-go-package": "FirstProject/Swagger"
     },
     "notFound": {
       "description": "HTTP status code 404 response",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "description": "Got error",
-            "type": "string",
-            "x-go-name": "Error"
-          }
+      "type": "object",
+      "properties": {
+        "error": {
+          "description": "in:body",
+          "type": "string",
+          "x-go-name": "Error"
         }
-      }
+      },
+      "x-go-name": "GenericNotFound",
+      "x-go-package": "FirstProject/Swagger"
     },
     "queryErrResp": {
-      "description": "HTTP status code 400 response",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "description": "Got error",
-            "type": "string",
-            "x-go-name": "Error"
-          }
+      "description": "HTTP status code 400 response message",
+      "type": "object",
+      "properties": {
+        "error": {
+          "description": "in:body",
+          "type": "string",
+          "x-go-name": "Error"
         }
-      }
+      },
+      "x-go-name": "GenericQueryErrResp",
+      "x-go-package": "FirstProject/Swagger"
     },
     "updateUserResp": {
-      "description": "JWT updated",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "jwt": {
-            "description": "New updated JWT",
-            "type": "string",
-            "x-go-name": "Jwt"
-          }
+      "description": "User's JWT updated",
+      "type": "object",
+      "properties": {
+        "jwt": {
+          "description": "in:body",
+          "type": "string",
+          "x-go-name": "Jwt"
         }
-      }
+      },
+      "x-go-name": "UpdateUserResp",
+      "x-go-package": "FirstProject/Swagger"
     }
   }
 }

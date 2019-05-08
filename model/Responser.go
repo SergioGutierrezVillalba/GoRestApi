@@ -1,18 +1,18 @@
 package model
 
 import (
-	"net/http"
 	"encoding/json"
 	"log"
+	"net/http"
 )
 
-type Responser struct {}
+type Responser struct{}
 
-func (responser *Responser) WithError(w http.ResponseWriter, code int, msg string){
-	responser.WithJson(w, code, map[string]string{"error": msg})
+func (responser *Responser) WithError(w http.ResponseWriter, code int, payload interface{}) {
+	responser.WithJson(w, code, payload)
 }
 
-func (responser *Responser) WithJson(w http.ResponseWriter, code int, payload interface{}){
+func (responser *Responser) WithJson(w http.ResponseWriter, code int, payload interface{}) {
 
 	response, err := json.Marshal(payload)
 

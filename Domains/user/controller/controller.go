@@ -3,6 +3,7 @@ package controller
 import (
 	timersUsecase "FirstProject/Domains/timer/usecase"
 	usersUsecase "FirstProject/Domains/user/usecase"
+	"errors"
 
 	model "FirstProject/Model"
 	auth "FirstProject/Model/Auth"
@@ -10,6 +11,8 @@ import (
 	"FirstProject/Model/imgs"
 	"FirstProject/Model/mail"
 	"FirstProject/Model/socket"
+
+	swagger "FirstProject/Swagger"
 
 	"encoding/json"
 	"fmt"
@@ -70,6 +73,8 @@ var (
 	requestInfo   auth.RequestInfo
 )
 
+// NewController generates a new controller
+// Params: Usecases
 func NewController(u usersUsecase.Usecase, t timersUsecase.Usecase) Controller {
 	return &UsersController{
 		UsersUsecase:  u,
@@ -79,6 +84,7 @@ func NewController(u usersUsecase.Usecase, t timersUsecase.Usecase) Controller {
 
 // SOCKETS CONTEXT
 
+// StartWebSocket
 func (u *UsersController) StartWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := socket.NewWebSocket(w, r)
@@ -112,17 +118,20 @@ func (u *UsersController) StartWebSocket(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+// CreateSocketMap
 func CreateSocketMap(ws *socket.WebSocket, groupId string) map[string]*socket.WebSocket {
 	socketMap := make(map[string]*socket.WebSocket)
 	socketMap[groupId] = ws
 	return socketMap
 }
 
+// AddSocketMapToSocketsMap
 func AddSocketMapToSocketsMaps(socketMap map[string]*socket.WebSocket) {
 	randomIdMap := ksuid.New().String()
 	socketsMaps[randomIdMap] = socketMap
 }
 
+// FinishWebSocket
 func (u *UsersController) FinishWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	var socket socket.SocketResponser
@@ -138,68 +147,48 @@ func (u *UsersController) FinishWebSocket(w http.ResponseWriter, r *http.Request
 
 // USERS CONTEXT
 
-// swagger:route GET /users users getUsersReq
+// GetAllUsers swagger:route GET /users users getAllUsers
 // Returns all users from Database.
 // Requires Auth (JWT)
 // responses:
-//   200: getAllUsersResp
-//   400: queryErrResp
-//   404: notFound
-//   500: internalErr
+//   200: body:getAllUsersResp
+//   400: body:queryErrResp
 func (u *UsersController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := u.UsersUsecase.GetAll()
 
 	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+		respond.WithError(w, http.StatusBadRequest, swagger.GenericQueryErrResp{
+			Error: err,
+		})
 		return
 	}
 
-	respond.WithJson(w, http.StatusOK, users)
+	respond.WithJson(w, http.StatusOK, swagger.GetAllUsersResp{Users: users})
 }
 
-// Array of users
-// swagger:response getAllUsersResp
-type swaggGetAllUsersResp struct {
-	// in:body
-	Body struct {
-		// Users array
-		Users []model.User `json:"users"`
-	}
-}
-
-// swagger:route GET /user users getUserByJwtReq
+// GetUserByJwt swagger:route GET /user users getUserByJwt
 // Returns user by JWT sent.
 // Requires Auth (JWT)
 // responses:
-//  200: getUserResp
-//  400: queryErrResp
-//  404: notFound
-//  500: internalErr
+//  200: body:getUserResp
+//  400: body:queryErrResp
 func (u *UsersController) GetUserByJwt(w http.ResponseWriter, r *http.Request) {
 
 	GetDataFromHeaderRequest(r)
 	user, err := u.UsersUsecase.GetUserByJwt(jwtSent)
 
 	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+		respond.WithError(w, http.StatusBadRequest, swagger.GenericQueryErrResp{
+			Error: err,
+		})
 		return
 	}
 
-	respond.WithJson(w, http.StatusOK, user)
+	respond.WithJson(w, http.StatusOK, swagger.GetUserResp{User: user})
 }
 
-// User requested
-// swagger:response getUserResp
-type swaggGetUserResp struct {
-	// in:body
-	Body struct {
-		// User model
-		User model.User `json:"user"`
-	}
-}
-
-// swagger:operation GET /users/{id} users getUserByIdReq
+// GetUserById swagger:operation GET /users/{id} users getUserById
 // ---
 // summary: Returns an user by Id sent
 // description: if user id is not send correctly 400 code is returned
@@ -210,31 +199,28 @@ type swaggGetUserResp struct {
 //   type: string
 //   required: true
 // responses:
-//  200: getUserResp
-//  400: queryErrResp
-//  404: notFound
-//  500: internalErr
+//  200: body:getUserResp
+//  400: body:queryErrResp
 func (u *UsersController) GetUserById(w http.ResponseWriter, r *http.Request) {
 
 	userId := GetIdFromUrl(r)
 	user, err := u.UsersUsecase.GetById(userId)
 
 	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, err.Error())
+		respond.WithError(w, http.StatusBadRequest, swagger.GenericQueryErrResp{
+			Error: err,
+		})
 		return
 	}
 
-	respond.WithJson(w, http.StatusOK, user)
+	respond.WithJson(w, http.StatusOK, swagger.GetUserResp{User: user})
 }
 
-// swagger:route POST /users users createUserReq
+// CreateUser swagger:route POST /users users createUser
 // Creates a user.
-// Creates a user with the given JSON body
 // responses:
-//  200: createUserResp
-//  400: queryErrResp
-//  404: notFound
-//  500: internalErr
+//  200: body:genericSuccessResp
+//  400: body:queryErrResp
 func (u *UsersController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var user model.User
@@ -245,32 +231,22 @@ func (u *UsersController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	user.Password, _ = crypter.Crypt(user.Password)
 
 	if ActionGivesError(u.UsersUsecase.Create(user)) {
-		respond.WithError(w, http.StatusBadRequest, "CreateUserError")
+		respond.WithError(w, http.StatusBadRequest, swagger.GenericQueryErrResp{
+			Error: errors.New("CreationUserError"),
+		})
 		return
 	}
 
 	user.EmptyPassword()
-	respond.WithJson(w, http.StatusOK, user)
+	respond.WithJson(w, http.StatusOK, swagger.GenericSuccessResp{Response: "Success"})
 }
 
-// Code response
-// swagger:response createUserResp
-type swaggCreateUserResp struct {
-	// in:body
-	Body struct {
-		// HTTP 200 status code
-		Code int `json:"code"`
-	}
-}
-
-// swagger:response PUT /users users updateUserReq
-// Updates a user
+// UpdateUser swagger:route PUT /users users updateUser
+// Updates a user.
 // Updates a user with JSON given and returns updated JWT.
 // responses:
-//  200: updateUserResp
-//  400: queryErrResp
-//  404: notFound
-//  500: internalErr
+//  200: body:updateUserResp
+//  400: body:queryErrResp
 func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	var userToUpdate model.User
@@ -298,27 +274,15 @@ func (u *UsersController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusBadRequest, "UpdateUserError")
 		return
 	}
-	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token: userToUpdate.Jwt})
+	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Jwt: userToUpdate.Jwt})
 }
 
-// JWT updated
-// swagger:response updateUserResp
-type swaggUpdateUserResp struct {
-	// in:body
-	Body struct {
-		// New updated JWT
-		Jwt string `json:"jwt"`
-	}
-}
-
-// swagger:response PUT /users/nopwd users updateUserWithoutPwdReq
-// Updates a user without updating password
+// UpdateUserWithoutUpdatingPassword swagger:route PUT /users/nopwd users updateUserWithoutPwd
+// Updates a user without updating password.
 // Updates a user with JSON given without changing password
 // responses:
-//  200: updateUserResp
-//  400: queryErrResp
-//  404: notFound
-//  500: internalErr
+//  200: body:updateUserResp
+//  400: body:queryErrResp
 func (u *UsersController) UpdateUserWithoutUpdatingPassword(w http.ResponseWriter, r *http.Request) {
 
 	var userToUpdate model.User
@@ -347,9 +311,15 @@ func (u *UsersController) UpdateUserWithoutUpdatingPassword(w http.ResponseWrite
 		respond.WithError(w, http.StatusBadRequest, "UpdateUserError")
 		return
 	}
-	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token: userToUpdate.Jwt})
+	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Jwt: userToUpdate.Jwt})
 }
 
+// DeleteUser swagger:route DELETE /users/{id} users deleteUser
+// Delete a user with given Id.
+// Deletes a user with given Id via url
+// responses:
+//  200: body:genericSuccessResp
+//  400: body:queryErrResp
 func (u *UsersController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	idUser := GetIdFromUrl(r)
@@ -360,9 +330,19 @@ func (u *UsersController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respond.WithJson(w, http.StatusOK, "Success")
+	respond.WithJson(w, http.StatusOK, struct {
+		Response string `json:"response"`
+	}{
+		"Success",
+	})
 }
 
+// Login swagger:route POST /users/login validation login
+// Login.
+// Checks data sent for login and returns jwt if successful
+// responses:
+//  200: body:loginResp
+//  400: body:queryErrResp
 func (u *UsersController) Login(w http.ResponseWriter, r *http.Request) {
 
 	var user model.User
@@ -389,9 +369,15 @@ func (u *UsersController) Login(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusBadRequest, "UpdateUserError")
 		return
 	}
-	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Token: userDb.Jwt})
+	respond.WithJson(w, http.StatusOK, auth.ResponseToken{Jwt: userDb.Jwt})
 }
 
+// Register swagger:route POST /users/register validation register
+// Register.
+// Allows register for new users
+// responses:
+//  200: body:genericSuccessResp
+//  400: body:queryErrResp
 func (u *UsersController) Register(w http.ResponseWriter, r *http.Request) {
 
 	var user model.User
@@ -411,6 +397,12 @@ func (u *UsersController) Register(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
+// SendRecover swagger:route POST /users/sendrecover validation sendRecover
+// Allows way to recover password when user has forgotten it.
+// Sends an mail to user's email related to with an url to recover password
+// responses:
+//  200: body:genericSuccessResp
+//  400: body:queryErrResp
 func (u *UsersController) SendRecover(w http.ResponseWriter, r *http.Request) {
 
 	// REFACTOR
@@ -448,6 +440,12 @@ func (u *UsersController) SendRecover(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
+// ResetPassword swagger:route PATCH /users/reset validation resetPassword
+// Change password.
+// Change password with recover token given.
+// responses:
+//  200: body:genericSuccessResp
+//  400: body:queryErrResp
 func (u *UsersController) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	var passwordRecover model.PasswordRecover
@@ -476,6 +474,7 @@ func (u *UsersController) ResetPassword(w http.ResponseWriter, r *http.Request) 
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
+// SetProfileImage
 func (u *UsersController) SetProfileImage(w http.ResponseWriter, r *http.Request) {
 
 	userId := r.FormValue("id")
@@ -494,6 +493,7 @@ func (u *UsersController) SetProfileImage(w http.ResponseWriter, r *http.Request
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
+// GetProfileImage
 func (u *UsersController) GetProfileImage(w http.ResponseWriter, r *http.Request) {
 
 	userId := GetIdFromUrl(r)
@@ -511,6 +511,7 @@ func (u *UsersController) GetProfileImage(w http.ResponseWriter, r *http.Request
 
 // TIMERS CONTEXT
 
+// GetAllTimers
 func (u *UsersController) GetAllTimers(w http.ResponseWriter, r *http.Request) {
 
 	timers, err := u.TimersUsecase.GetAll()
@@ -524,6 +525,7 @@ func (u *UsersController) GetAllTimers(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, timersFormatted)
 }
 
+// GetTimerById
 func (u *UsersController) GetTimerById(w http.ResponseWriter, r *http.Request) {
 
 	timerId := GetIdFromUrl(r)
@@ -538,6 +540,7 @@ func (u *UsersController) GetTimerById(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
+// GetTimersByUserId
 func (u *UsersController) GetTimersByUserId(w http.ResponseWriter, r *http.Request) {
 
 	userId := GetIdFromUrl(r)
@@ -552,6 +555,7 @@ func (u *UsersController) GetTimersByUserId(w http.ResponseWriter, r *http.Reque
 	respond.WithJson(w, http.StatusOK, timersFormatted)
 }
 
+// CreateTimer
 func (u *UsersController) CreateTimer(w http.ResponseWriter, r *http.Request) {
 
 	var timer model.Timer
@@ -568,6 +572,7 @@ func (u *UsersController) CreateTimer(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
+// UpdateTimer
 func (u *UsersController) UpdateTimer(w http.ResponseWriter, r *http.Request) {
 
 	var timer model.Timer
@@ -582,6 +587,7 @@ func (u *UsersController) UpdateTimer(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
+// DeleteTimer
 func (u *UsersController) DeleteTimer(w http.ResponseWriter, r *http.Request) {
 
 	timerId := GetIdFromUrl(r)
@@ -594,6 +600,7 @@ func (u *UsersController) DeleteTimer(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, "Success")
 }
 
+// StartTimer
 func (u *UsersController) StartTimer(w http.ResponseWriter, r *http.Request) {
 
 	var user model.User
@@ -624,6 +631,7 @@ func (u *UsersController) StartTimer(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
+// FinishTimer
 func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request) {
 
 	var timer model.Timer
@@ -669,20 +677,23 @@ func (u *UsersController) FinishTimer(w http.ResponseWriter, r *http.Request) {
 	respond.WithJson(w, http.StatusOK, timerFormatted)
 }
 
-//
+// GetIdFromUrl
 func GetIdFromUrl(r *http.Request) (id string) {
 	id = Helper.GetIdFromUrl(r)
 	return
 }
 
+// GetDataFromBodyJSONRequest
 func GetDataFromBodyJSONRequest(r *http.Request, dataSaver interface{}) {
 	json.NewDecoder(r.Body).Decode(dataSaver)
 }
 
+// GetDataFromHeaderRequest
 func GetDataFromHeaderRequest(r *http.Request) {
 	jwtSent, _ = Helper.GetJWTFromHeaderRequest(r)
 }
 
+// SendFinishNotificationToTheGroup
 func SendFinishNotificationToTheGroup(userOwnerOfTimer model.User) {
 	for _, socketMap := range socketsMaps {
 		for groupId, websocket := range socketMap {
@@ -694,6 +705,7 @@ func SendFinishNotificationToTheGroup(userOwnerOfTimer model.User) {
 	}
 }
 
+// GetUserRequesting
 func (u *UsersController) GetUserRequesting() model.User {
 	userIdRequesting, _ := authenticator.GetUserIdFromJWT(jwtSent)
 	userRequesting, _ := u.UsersUsecase.GetById(userIdRequesting)
@@ -701,9 +713,9 @@ func (u *UsersController) GetUserRequesting() model.User {
 	return userRequesting
 }
 
+// GenerateJWTAndSaveInUser
 // Needs a pointer for saving JWT everywhere it's called.
 // At the same time, needs the struct for generating a JWT.
-
 func GenerateJWTAndSaveInUser(userPointer *model.User) {
 	var user model.User
 	user = *userPointer
@@ -711,6 +723,7 @@ func GenerateJWTAndSaveInUser(userPointer *model.User) {
 	userPointer.SetJWT(newJWT)
 }
 
+// SaveFinishAndDuration
 func SaveFinishAndDuration(timerPointer *model.Timer) {
 	finishTime := time.Now().Unix()
 	duration := finishTime - timerPointer.Start
@@ -719,19 +732,23 @@ func SaveFinishAndDuration(timerPointer *model.Timer) {
 	timerPointer.Duration = duration
 }
 
+// FormatTimerForResponse
 func FormatTimerForResponse(timer model.Timer) model.TimerFormatted {
 	return Helper.FormatTimerForResponse(timer)
 }
 
+// ActionGivesError
 func ActionGivesError(e error) bool {
 	return Helper.ActionGivesError(e)
 }
 
+// CleanUserPasswordAndJWT
 func CleanUserPasswordAndJWT(userPointer *model.User) {
 	userPointer.EmptyPassword()
 	userPointer.EmptyJWT()
 }
 
+// CreateTimerStruct
 func CreateTimerStruct(userOwner model.User) (timer model.Timer) {
 	timer.Id = bson.NewObjectId()
 	timer.UserId = userOwner.Id
@@ -739,42 +756,14 @@ func CreateTimerStruct(userOwner model.User) (timer model.Timer) {
 	return
 }
 
+// PrepareUserForUpdate
 func PrepareUserForUpdate(userPointer *model.User, newPassword string) {
 	userPointer.EmptyPassword()
 	GenerateJWTAndSaveInUser(userPointer)
 	userPointer.SetPassword(newPassword)
 }
 
+// CleanSlashesFromToken
 func CleanSlashesFromToken(token string) string {
 	return Helper.CleanSlashesFromToken(token)
-}
-
-// HTTP status code 400 response
-// swagger:response queryErrResp
-type swaggQueryErrResp struct {
-	// in:body
-	Body struct {
-		// Got error
-		Error error `json:"error"`
-	}
-}
-
-// HTTP status code 404 response
-// swagger:response notFound
-type swaggNotFound struct {
-	// in:body
-	Body struct {
-		// Got error
-		Error error `json:"error"`
-	}
-}
-
-// HTTP status code 500 response
-// swagger:response internalErr
-type swaggInternalErr struct {
-	// in:body
-	Body struct {
-		// Got error
-		Error error `json:"error"`
-	}
 }
