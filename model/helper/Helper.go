@@ -35,36 +35,21 @@ func (h *Helper) DoesntHasBearer(jwt string) bool {
 }
 
 func (h *Helper) IsUser(user model.User) bool {
-	if user.Role == "user" {
-		return true
-	}
-	return false
+	return user.Role == "user"
 }
 
 func (h *Helper) IsAdmin(user model.User) bool {
-	if user.Role == "admin" {
-		return true
-	}
-	return false
+	return user.Role == "admin"
 }
 
 func (h *Helper) IsUpdatingItself(userIdRequesting string, userIdUpdating string) bool {
-	if userIdRequesting == userIdUpdating {
-		return true
-	}
-	return false
+	return userIdRequesting == userIdUpdating
 }
 
 func (h *Helper) IsNotEmpty(data string) bool {
-	if data == "" {
-		return false
-	}
-	return true
+	return !(data == "")
 }
 
 func (h *Helper) IsEmpty(data string) bool {
-	if data == "" {
-		return true
-	}
-	return false
+	return data == ""
 }
